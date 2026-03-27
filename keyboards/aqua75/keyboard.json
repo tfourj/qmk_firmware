@@ -133,9 +133,9 @@
                 {"label": "GUI", "matrix": [5, 1], "x": 7, "y": 5, "w": 1.25},
                 {"label": "Alt", "matrix": [5, 2], "x": 8.25, "y": 5, "w": 1.25},
                 {"label": "Space", "matrix": [5, 6], "x": 9.5, "y": 5, "w": 6.25},
-                {"label": "RAlt", "matrix": [5, 9], "x": 15.75, "y": 5, "w": 1.25},
-                {"label": "Fn", "matrix": [5, 10], "x": 17, "y": 5},
-                {"label": "RCtrl", "matrix": [5, 11], "x": 18, "y": 5, "w": 1.25}
+                {"label": "RAlt", "matrix": [5, 9], "x": 15.75, "y": 5},
+                {"label": "Fn", "matrix": [5, 10], "x": 16.75, "y": 5},
+                {"label": "RCtrl", "matrix": [5, 11], "x": 17.75, "y": 5}
             ]
         }
     }
