@@ -39,7 +39,7 @@
         }
     },
     "ws2812": {
-        "pin": "D3"
+        "pin": "D2"
     },
     "layouts": {
         "LAYOUT": {
