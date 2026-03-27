@@ -5,7 +5,7 @@
 #include "timer.h"
 
 static const rgblight_segment_t PROGMEM aqua75_capslock_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    {0, RGBLIGHT_LED_COUNT, HSV_RED}
+    {47, 1, HSV_RED}
 );
 
 static const rgblight_segment_t *const PROGMEM aqua75_rgblight_layers[] = RGBLIGHT_LAYERS_LIST(
