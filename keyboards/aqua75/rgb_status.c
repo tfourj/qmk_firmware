@@ -53,10 +53,10 @@ static void aqua75_update_capslock_layer(bool enabled) {
         return;
     }
 
-    rgblight_set();
-
     if (aqua75_capslock_active && enabled) {
         rgblight_sethsv_at(aqua75_capslock_hue, rgblight_get_sat(), rgblight_get_val(), AQUA75_CAPS_LED_INDEX);
+    } else {
+        rgblight_sethsv_at(rgblight_get_hue(), rgblight_get_sat(), rgblight_get_val(), AQUA75_CAPS_LED_INDEX);
     }
 }
 
