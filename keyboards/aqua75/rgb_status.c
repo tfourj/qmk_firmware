@@ -5,9 +5,15 @@
 #include "timer.h"
 
 #define AQUA75_RGB_IDLE_TIMEOUT 300000
+#define AQUA75_HUE_GREEN 85
+#define AQUA75_HUE_RED 0
+#define AQUA75_HUE_YELLOW 43
+#define AQUA75_HUE_CYAN 128
+#define AQUA75_HUE_MAGENTA 191
+#define AQUA75_HUE_THRESHOLD 24
 
-static const rgblight_segment_t PROGMEM aqua75_capslock_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    {47, 1, HSV_RED}
+static rgblight_segment_t aqua75_capslock_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    {47, 1, AQUA75_HUE_GREEN, 255, 255}
 );
 
 static const rgblight_segment_t *const PROGMEM aqua75_rgblight_layers[] = RGBLIGHT_LAYERS_LIST(
@@ -22,9 +28,38 @@ static bool     aqua75_rgb_was_enabled  = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_last_input_time  = 0;
 
+static uint8_t aqua75_hue_distance(uint8_t a, uint8_t b) {
+    uint8_t distance = a > b ? a - b : b - a;
+    return distance < (uint8_t)(256 - distance) ? distance : (uint8_t)(256 - distance);
+}
+
+static void aqua75_refresh_capslock_color(void) {
+    static const uint8_t palette[] = {AQUA75_HUE_GREEN, AQUA75_HUE_CYAN, AQUA75_HUE_MAGENTA, AQUA75_HUE_YELLOW, AQUA75_HUE_RED};
+    uint8_t              current_hue = rgblight_get_hue();
+    uint8_t              flash_hue   = AQUA75_HUE_GREEN;
+
+    if (aqua75_hue_distance(current_hue, flash_hue) < AQUA75_HUE_THRESHOLD) {
+        uint8_t start = (uint8_t)(timer_read32() % ARRAY_SIZE(palette));
+
+        for (uint8_t i = 0; i < ARRAY_SIZE(palette); i++) {
+            uint8_t candidate = palette[(start + i) % ARRAY_SIZE(palette)];
+            if (aqua75_hue_distance(current_hue, candidate) >= AQUA75_HUE_THRESHOLD) {
+                flash_hue = candidate;
+                break;
+            }
+        }
+    }
+
+    aqua75_capslock_layer[0].hue = flash_hue;
+    aqua75_capslock_layer[0].sat = rgblight_get_sat();
+}
+
 static void aqua75_update_capslock_layer(bool enabled) {
     aqua75_capslock_visible = enabled;
     rgblight_set_layer_state(0, enabled);
+    if (enabled) {
+        rgblight_set();
+    }
 }
 
 void keyboard_post_init_kb(void) {
@@ -43,6 +78,7 @@ bool led_update_kb(led_t led_state) {
     aqua75_capslock_timer  = timer_read32();
 
     if (aqua75_capslock_active && !aqua75_is_suspended && rgblight_is_enabled()) {
+        aqua75_refresh_capslock_color();
         aqua75_update_capslock_layer(true);
     } else {
         aqua75_update_capslock_layer(false);
