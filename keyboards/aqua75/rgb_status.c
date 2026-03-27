@@ -4,7 +4,7 @@
 #include "quantum.h"
 #include "timer.h"
 
-#define AQUA75_RGB_IDLE_TIMEOUT 600000
+#define AQUA75_RGB_IDLE_TIMEOUT 300000
 
 static const rgblight_segment_t PROGMEM aqua75_capslock_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     {47, 1, HSV_RED}
