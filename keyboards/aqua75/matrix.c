@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "quantum.h"
-#include "mcp23018.h"
+#include "drivers/gpio/mcp23018.h"
 #include "wait.h"
 
 static bool mcp_ready = false;
