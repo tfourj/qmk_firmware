@@ -1,4 +1,5 @@
 CUSTOM_MATRIX = lite
+OS_DETECTION_ENABLE = yes
 
 SRC += matrix.c
 SRC += i2c_override.c

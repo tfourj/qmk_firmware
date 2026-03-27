@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "quantum.h"
+#include "os_detection.h"
 #include "timer.h"
 
-#define AQUA75_RGB_IDLE_TIMEOUT 300000
+#define AQUA75_RGB_IDLE_TIMEOUT_LONG  300000
+#define AQUA75_RGB_IDLE_TIMEOUT_SHORT 20000
 #define AQUA75_HUE_GREEN 85
 #define AQUA75_HUE_RED 0
 #define AQUA75_HUE_YELLOW 43
@@ -20,7 +22,21 @@ static bool     aqua75_rgb_idle_off     = false;
 static bool     aqua75_rgb_was_enabled  = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_last_input_time  = 0;
+static uint32_t aqua75_rgb_idle_timeout = AQUA75_RGB_IDLE_TIMEOUT_SHORT;
 static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
+
+static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
+    switch (detected_os) {
+        case OS_WINDOWS:
+        case OS_MACOS:
+        case OS_LINUX:
+        case OS_IOS:
+            return AQUA75_RGB_IDLE_TIMEOUT_LONG;
+        case OS_UNSURE:
+        default:
+            return AQUA75_RGB_IDLE_TIMEOUT_SHORT;
+    }
+}
 
 static uint8_t aqua75_hue_distance(uint8_t a, uint8_t b) {
     uint8_t distance = a > b ? a - b : b - a;
@@ -62,8 +78,14 @@ static void aqua75_update_capslock_layer(bool enabled) {
 
 void keyboard_post_init_kb(void) {
     aqua75_update_capslock_layer(false);
-    aqua75_last_input_time = last_input_activity_time();
+    aqua75_last_input_time  = last_input_activity_time();
+    aqua75_rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(detected_host_os());
     keyboard_post_init_user();
+}
+
+bool process_detected_host_os_kb(os_variant_t detected_os) {
+    aqua75_rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(detected_os);
+    return process_detected_host_os_user(detected_os);
 }
 
 bool led_update_kb(led_t led_state) {
@@ -98,7 +120,7 @@ void housekeeping_task_kb(void) {
         }
     }
 
-    if (!aqua75_is_suspended && !aqua75_rgb_idle_off && rgblight_is_enabled() && last_input_activity_elapsed() >= AQUA75_RGB_IDLE_TIMEOUT) {
+    if (!aqua75_is_suspended && !aqua75_rgb_idle_off && rgblight_is_enabled() && last_input_activity_elapsed() >= aqua75_rgb_idle_timeout) {
         aqua75_rgb_was_enabled = true;
         aqua75_rgb_idle_off    = true;
         aqua75_update_capslock_layer(false);
