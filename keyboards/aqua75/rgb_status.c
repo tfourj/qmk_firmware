@@ -11,14 +11,7 @@
 #define AQUA75_HUE_CYAN 128
 #define AQUA75_HUE_MAGENTA 191
 #define AQUA75_HUE_THRESHOLD 24
-
-static rgblight_segment_t aqua75_capslock_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    {47, 1, AQUA75_HUE_GREEN, 255, 255}
-);
-
-static const rgblight_segment_t *const PROGMEM aqua75_rgblight_layers[] = RGBLIGHT_LAYERS_LIST(
-    aqua75_capslock_layer
-);
+#define AQUA75_CAPS_LED_INDEX 47
 
 static bool     aqua75_capslock_active  = false;
 static bool     aqua75_capslock_visible = false;
@@ -27,6 +20,7 @@ static bool     aqua75_rgb_idle_off     = false;
 static bool     aqua75_rgb_was_enabled  = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_last_input_time  = 0;
+static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
 
 static uint8_t aqua75_hue_distance(uint8_t a, uint8_t b) {
     uint8_t distance = a > b ? a - b : b - a;
@@ -50,20 +44,18 @@ static void aqua75_refresh_capslock_color(void) {
         }
     }
 
-    aqua75_capslock_layer[0].hue = flash_hue;
-    aqua75_capslock_layer[0].sat = rgblight_get_sat();
+    aqua75_capslock_hue = flash_hue;
 }
 
 static void aqua75_update_capslock_layer(bool enabled) {
     aqua75_capslock_visible = enabled;
-    rgblight_set_layer_state(0, enabled);
-    if (enabled) {
-        rgblight_set();
+    rgblight_set();
+    if (enabled && rgblight_is_enabled()) {
+        rgblight_sethsv_at(aqua75_capslock_hue, rgblight_get_sat(), rgblight_get_val(), AQUA75_CAPS_LED_INDEX);
     }
 }
 
 void keyboard_post_init_kb(void) {
-    rgblight_layers = aqua75_rgblight_layers;
     aqua75_update_capslock_layer(false);
     aqua75_last_input_time = last_input_activity_time();
     keyboard_post_init_user();
