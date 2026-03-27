@@ -13,8 +13,7 @@
 #define TWBR_VAL (((F_CPU / F_SCL) - 16) / 2)
 
 void i2c_init(void) {
-    // The original nice!nano setup enabled pull-ups on the I2C lines.
-    // Keep D0/D1 pulled up here in case the PCB does not have discrete resistors.
+    // Keep D0/D1 pulled up in case the PCB relies on MCU pull-ups for the MCP23018 bus.
     gpio_set_pin_input_high(D0);
     gpio_set_pin_input_high(D1);
 
