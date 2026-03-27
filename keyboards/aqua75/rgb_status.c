@@ -49,9 +49,15 @@ static void aqua75_refresh_capslock_color(void) {
 
 static void aqua75_update_capslock_layer(bool enabled) {
     aqua75_capslock_visible = enabled;
-    rgblight_set();
-    if (enabled && rgblight_is_enabled()) {
+    if (!aqua75_capslock_active || !rgblight_is_enabled()) {
+        rgblight_set();
+        return;
+    }
+
+    if (enabled) {
         rgblight_sethsv_at(aqua75_capslock_hue, rgblight_get_sat(), rgblight_get_val(), AQUA75_CAPS_LED_INDEX);
+    } else {
+        rgblight_setrgb_at(0, 0, 0, AQUA75_CAPS_LED_INDEX);
     }
 }
 
