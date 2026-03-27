@@ -5,8 +5,8 @@
     "url": "https://github.com/TfourJ",
     "tags": ["75%", "handwired", "rgb"],
     "usb": {
-        "vid": "0xFEED",
-        "pid": "0x0767",
+        "vid": "0x5434",
+        "pid": "0x0750",
         "device_version": "1.0.0"
     },
     "development_board": "promicro",
