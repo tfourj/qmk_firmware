@@ -11,6 +11,6 @@
     {7, 6, 5, 4, 3, 2, 1, 0, 8, 9, 10, 11, 12, 13, 14, 15}
 
 #define MATRIX_ROW_PINS \
-    {A1, A0, D15, D14, D16, D10}
+    {F6, F7, B1, B3, B2, B6}
 
 #define WS2812_BYTE_ORDER WS2812_BYTE_ORDER_GRB
