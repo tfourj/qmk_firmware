@@ -16,7 +16,7 @@
                     "label": "USB",
                     "content": [
                         {
-                            "label": "Reset USB",
+                            "label": "Re-detect Host",
                             "type": "button",
                             "content": ["id_aqua75_usb_reset", 10, 1]
                         }
