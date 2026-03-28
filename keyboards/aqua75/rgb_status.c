@@ -31,6 +31,12 @@ enum aqua75_via_value {
     id_aqua75_usb_reset = 1,
 };
 
+enum aqua75_custom_keycodes {
+    USB_RST = QK_USER_0,
+    KVM_IN1,
+    KVM_IN2,
+};
+
 static bool     aqua75_capslock_active  = false;
 static bool     aqua75_capslock_visible = false;
 static bool     aqua75_fn_indicator_visible = false;
@@ -54,6 +60,16 @@ static void aqua75_update_fn_indicator(bool enabled);
 static void aqua75_schedule_manual_usb_reset(void) {
     aqua75_manual_usb_reset_pending = true;
     aqua75_manual_usb_reset_timer   = timer_read32();
+}
+
+static void aqua75_kvm_input(uint16_t keycode) {
+    tap_code(KC_RCTL);
+    wait_ms(150);
+    tap_code(KC_RCTL);
+    wait_ms(150);
+    tap_code16(keycode);
+    wait_ms(1500);
+    aqua75_schedule_manual_usb_reset();
 }
 
 static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
@@ -178,6 +194,30 @@ bool process_detected_host_os_kb(os_variant_t detected_os) {
         aqua75_update_fn_indicator(false);
     }
     return process_detected_host_os_user(detected_os);
+}
+
+bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    if (!process_record_user(keycode, record)) {
+        return false;
+    }
+
+    if (!record->event.pressed) {
+        return true;
+    }
+
+    switch (keycode) {
+        case USB_RST:
+            aqua75_schedule_manual_usb_reset();
+            return false;
+        case KVM_IN1:
+            aqua75_kvm_input(KC_1);
+            return false;
+        case KVM_IN2:
+            aqua75_kvm_input(KC_2);
+            return false;
+        default:
+            return true;
+    }
 }
 
 bool led_update_kb(led_t led_state) {

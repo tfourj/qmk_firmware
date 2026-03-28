@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include QMK_KEYBOARD_H
-#include "usb_util.h"
 
 enum aqua75_layers {
     _BASE,
@@ -10,22 +9,6 @@ enum aqua75_layers {
 };
 
 #define _______ KC_TRNS
-
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (!record->event.pressed) {
-        return true;
-    }
-
-    switch (keycode) {
-        case KC_PWR:
-            usb_disconnect();
-            wait_ms(200);
-            soft_reset_keyboard();
-            return false;
-        default:
-            return true;
-    }
-}
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT(
