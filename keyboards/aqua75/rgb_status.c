@@ -5,6 +5,7 @@
 #include "led_map.h"
 #include "os_detection.h"
 #include "timer.h"
+#include "usb_util.h"
 
 #define AQUA75_RGB_IDLE_TIMEOUT_LONG  300000
 #define AQUA75_RGB_IDLE_TIMEOUT_SHORT 20000
@@ -20,6 +21,7 @@
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
 #define AQUA75_MANUAL_RESET_DELAY 50
+#define AQUA75_MANUAL_USB_DISCONNECT_MS 250
 
 enum aqua75_via_channel {
     id_aqua75_channel = 10,
@@ -240,6 +242,8 @@ void housekeeping_task_kb(void) {
 
     if (aqua75_manual_reset_pending && timer_elapsed32(aqua75_manual_reset_timer) >= AQUA75_MANUAL_RESET_DELAY) {
         aqua75_manual_reset_pending = false;
+        usb_disconnect();
+        wait_ms(AQUA75_MANUAL_USB_DISCONNECT_MS);
         soft_reset_keyboard();
         return;
     }
