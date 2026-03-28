@@ -18,9 +18,9 @@ static void aqua75_schedule_kvm_reset(void) {
 
 static void aqua75_kvm_input(uint16_t keycode) {
     tap_code(KC_RCTL);
-    wait_ms(150);
+    wait_ms(AQUA75_KVM_DOUBLE_TAP_DELAY);
     tap_code(KC_RCTL);
-    wait_ms(150);
+    wait_ms(AQUA75_KVM_SELECT_DELAY);
     tap_code16(keycode);
     aqua75_schedule_kvm_reset();
 }
