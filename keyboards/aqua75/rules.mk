@@ -1,5 +1,6 @@
 CUSTOM_MATRIX = lite
 OS_DETECTION_ENABLE = yes
+NO_USB_STARTUP_CHECK = yes
 
 SRC += matrix.c
 SRC += i2c_override.c
