@@ -16,12 +16,20 @@ static void aqua75_schedule_kvm_reset(void) {
     aqua75_state.kvm_reset_timer   = timer_read32();
 }
 
+static void aqua75_kvm_tap(uint16_t keycode, uint16_t hold_delay, uint16_t release_delay) {
+    register_code16(keycode);
+    wait_ms(hold_delay);
+    unregister_code16(keycode);
+    wait_ms(release_delay);
+}
+
 static void aqua75_kvm_input(uint16_t keycode) {
-    tap_code(KC_RCTL);
-    wait_ms(AQUA75_KVM_DOUBLE_TAP_DELAY);
-    tap_code(KC_RCTL);
-    wait_ms(AQUA75_KVM_SELECT_DELAY);
-    tap_code16(keycode);
+    clear_keyboard();
+    wait_ms(AQUA75_KVM_SEQUENCE_SETTLE_DELAY);
+    aqua75_kvm_tap(KC_RCTL, AQUA75_KVM_TAP_HOLD_DELAY, AQUA75_KVM_DOUBLE_TAP_DELAY);
+    aqua75_kvm_tap(KC_RCTL, AQUA75_KVM_TAP_HOLD_DELAY, AQUA75_KVM_SELECT_DELAY);
+    aqua75_kvm_tap(keycode, AQUA75_KVM_TAP_HOLD_DELAY, AQUA75_KVM_SEQUENCE_SETTLE_DELAY);
+    clear_keyboard();
     aqua75_schedule_kvm_reset();
 }
 
