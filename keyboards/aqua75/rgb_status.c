@@ -49,6 +49,7 @@ static bool     aqua75_rgb_was_enabled  = false;
 static bool     aqua75_ignore_fn_activity = false;
 static bool     aqua75_manual_reset_pending = false;
 static bool     aqua75_kvm_reset_pending = false;
+static bool     aqua75_kvm_reset_armed = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_fn_indicator_timer = 0;
 static uint32_t aqua75_fn_tap_timer     = 0;
@@ -68,6 +69,7 @@ static void aqua75_schedule_manual_reset(void) {
 
 static void aqua75_schedule_kvm_reset(void) {
     aqua75_kvm_reset_pending = true;
+    aqua75_kvm_reset_armed   = false;
     aqua75_kvm_reset_timer   = timer_read32();
 }
 
@@ -201,6 +203,13 @@ bool process_detected_host_os_kb(os_variant_t detected_os) {
     if (rgblight_is_enabled()) {
         aqua75_update_fn_indicator(false);
     }
+
+    if (aqua75_kvm_reset_pending && aqua75_kvm_reset_armed && detected_os != OS_UNSURE) {
+        aqua75_kvm_reset_pending = false;
+        aqua75_kvm_reset_armed   = false;
+        aqua75_schedule_manual_reset();
+    }
+
     return process_detected_host_os_user(detected_os);
 }
 
@@ -261,11 +270,11 @@ void housekeeping_task_kb(void) {
     if (aqua75_kvm_reset_pending) {
         uint32_t elapsed = timer_elapsed32(aqua75_kvm_reset_timer);
 
-        if (elapsed >= AQUA75_KVM_RESET_ARM_DELAY && usb_connected_state()) {
+        if (elapsed >= AQUA75_KVM_RESET_TIMEOUT) {
             aqua75_kvm_reset_pending = false;
-            aqua75_schedule_manual_reset();
-        } else if (elapsed >= AQUA75_KVM_RESET_TIMEOUT) {
-            aqua75_kvm_reset_pending = false;
+            aqua75_kvm_reset_armed   = false;
+        } else if (elapsed >= AQUA75_KVM_RESET_ARM_DELAY) {
+            aqua75_kvm_reset_armed = true;
         }
     }
 
