@@ -22,6 +22,8 @@
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
 #define AQUA75_MANUAL_RESET_DELAY 50
 #define AQUA75_MANUAL_USB_DISCONNECT_MS 250
+#define AQUA75_KVM_RESET_ARM_DELAY 300
+#define AQUA75_KVM_RESET_TIMEOUT 2000
 
 enum aqua75_via_channel {
     id_aqua75_channel = 10,
@@ -46,11 +48,13 @@ static bool     aqua75_rgb_idle_off     = false;
 static bool     aqua75_rgb_was_enabled  = false;
 static bool     aqua75_ignore_fn_activity = false;
 static bool     aqua75_manual_reset_pending = false;
+static bool     aqua75_kvm_reset_pending = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_fn_indicator_timer = 0;
 static uint32_t aqua75_fn_tap_timer     = 0;
 static uint32_t aqua75_last_input_time  = 0;
 static uint32_t aqua75_manual_reset_timer = 0;
+static uint32_t aqua75_kvm_reset_timer  = 0;
 static uint32_t aqua75_rgb_idle_timeout = AQUA75_RGB_IDLE_TIMEOUT_SHORT;
 static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
 static uint8_t  aqua75_fn_indicator_led = AQUA75_NO_LED;
@@ -62,14 +66,18 @@ static void aqua75_schedule_manual_reset(void) {
     aqua75_manual_reset_timer   = timer_read32();
 }
 
+static void aqua75_schedule_kvm_reset(void) {
+    aqua75_kvm_reset_pending = true;
+    aqua75_kvm_reset_timer   = timer_read32();
+}
+
 static void aqua75_kvm_input(uint16_t keycode) {
     tap_code(KC_RCTL);
     wait_ms(150);
     tap_code(KC_RCTL);
     wait_ms(150);
     tap_code16(keycode);
-    wait_ms(300);
-    aqua75_schedule_manual_reset();
+    aqua75_schedule_kvm_reset();
 }
 
 static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
@@ -248,6 +256,17 @@ void housekeeping_task_kb(void) {
         wait_ms(AQUA75_MANUAL_USB_DISCONNECT_MS);
         soft_reset_keyboard();
         return;
+    }
+
+    if (aqua75_kvm_reset_pending) {
+        uint32_t elapsed = timer_elapsed32(aqua75_kvm_reset_timer);
+
+        if (elapsed >= AQUA75_KVM_RESET_ARM_DELAY && usb_connected_state()) {
+            aqua75_kvm_reset_pending = false;
+            aqua75_schedule_manual_reset();
+        } else if (elapsed >= AQUA75_KVM_RESET_TIMEOUT) {
+            aqua75_kvm_reset_pending = false;
+        }
     }
 
     if (current_input_time != aqua75_last_input_time) {
