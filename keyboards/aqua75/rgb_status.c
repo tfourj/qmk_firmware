@@ -18,6 +18,7 @@
 #define AQUA75_FN_ROW 5
 #define AQUA75_FN_COL 10
 #define AQUA75_STATUS_BLINK_INTERVAL 500
+#define AQUA75_FN_DOUBLE_TAP_TERM 300
 
 static bool     aqua75_capslock_active  = false;
 static bool     aqua75_capslock_visible = false;
@@ -26,8 +27,10 @@ static bool     aqua75_fn_was_held      = false;
 static bool     aqua75_is_suspended     = false;
 static bool     aqua75_rgb_idle_off     = false;
 static bool     aqua75_rgb_was_enabled  = false;
+static bool     aqua75_ignore_fn_activity = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_fn_indicator_timer = 0;
+static uint32_t aqua75_fn_tap_timer     = 0;
 static uint32_t aqua75_last_input_time  = 0;
 static uint32_t aqua75_rgb_idle_timeout = AQUA75_RGB_IDLE_TIMEOUT_SHORT;
 static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
@@ -86,6 +89,20 @@ static void aqua75_update_capslock_layer(bool enabled) {
 
 static void aqua75_restore_led_color(uint8_t led_index) {
     rgblight_sethsv_at(rgblight_get_hue(), rgblight_get_sat(), rgblight_get_val(), led_index);
+}
+
+static void aqua75_force_rgb_idle_off(void) {
+    if (aqua75_rgb_idle_off || !rgblight_is_enabled()) {
+        return;
+    }
+
+    aqua75_rgb_was_enabled   = true;
+    aqua75_rgb_idle_off      = true;
+    aqua75_ignore_fn_activity = true;
+    aqua75_last_input_time   = last_input_activity_time();
+    aqua75_update_capslock_layer(false);
+    aqua75_update_fn_indicator(false);
+    rgblight_disable_noeeprom();
 }
 
 static uint8_t aqua75_fn_indicator_led_index(void) {
@@ -163,11 +180,14 @@ bool led_update_kb(led_t led_state) {
 
 void housekeeping_task_kb(void) {
     uint32_t current_input_time = last_input_activity_time();
+    bool     fn_held            = matrix_is_on(AQUA75_FN_ROW, AQUA75_FN_COL);
 
     if (current_input_time != aqua75_last_input_time) {
         aqua75_last_input_time = current_input_time;
 
-        if (aqua75_rgb_idle_off) {
+        if (aqua75_ignore_fn_activity && !fn_held) {
+            aqua75_ignore_fn_activity = false;
+        } else if (aqua75_rgb_idle_off) {
             aqua75_rgb_idle_off = false;
             if (aqua75_rgb_was_enabled) {
                 rgblight_enable_noeeprom();
@@ -176,11 +196,7 @@ void housekeeping_task_kb(void) {
     }
 
     if (!aqua75_is_suspended && !aqua75_rgb_idle_off && rgblight_is_enabled() && last_input_activity_elapsed() >= aqua75_rgb_idle_timeout) {
-        aqua75_rgb_was_enabled = true;
-        aqua75_rgb_idle_off    = true;
-        aqua75_update_capslock_layer(false);
-        aqua75_update_fn_indicator(false);
-        rgblight_disable_noeeprom();
+        aqua75_force_rgb_idle_off();
     }
 
     if (aqua75_capslock_active && !aqua75_is_suspended && !aqua75_rgb_idle_off && rgblight_is_enabled()) {
@@ -192,13 +208,22 @@ void housekeeping_task_kb(void) {
         aqua75_update_capslock_layer(false);
     }
 
-    bool fn_held = matrix_is_on(AQUA75_FN_ROW, AQUA75_FN_COL);
-
     if (fn_held && !aqua75_is_suspended && !aqua75_rgb_idle_off && rgblight_is_enabled()) {
         if (!aqua75_fn_was_held) {
+            bool forced_idle_off = false;
+
+            if (timer_elapsed32(aqua75_fn_tap_timer) <= AQUA75_FN_DOUBLE_TAP_TERM) {
+                aqua75_fn_tap_timer = 0;
+                aqua75_force_rgb_idle_off();
+                forced_idle_off = true;
+            } else {
+                aqua75_fn_tap_timer = timer_read32();
+            }
             aqua75_fn_was_held       = true;
-            aqua75_fn_indicator_timer = timer_read32();
-            aqua75_update_fn_indicator(true);
+            if (!forced_idle_off) {
+                aqua75_fn_indicator_timer = timer_read32();
+                aqua75_update_fn_indicator(true);
+            }
         } else if (timer_elapsed32(aqua75_fn_indicator_timer) >= AQUA75_STATUS_BLINK_INTERVAL) {
             aqua75_fn_indicator_timer = timer_read32();
             aqua75_update_fn_indicator(!aqua75_fn_indicator_visible);
