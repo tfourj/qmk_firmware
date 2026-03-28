@@ -7,7 +7,24 @@
         "cols": 16
     },
     "keycodes": ["qmk_lighting"],
-    "menus": ["qmk_rgblight"],
+    "menus": [
+        "qmk_rgblight",
+        {
+            "label": "Tools",
+            "content": [
+                {
+                    "label": "USB",
+                    "content": [
+                        {
+                            "label": "Reset USB",
+                            "type": "button",
+                            "content": ["id_aqua75_usb_reset", 10, 1]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
     "layouts": {
         "keymap": [
             [

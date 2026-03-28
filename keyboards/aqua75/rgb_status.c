@@ -5,6 +5,7 @@
 #include "led_map.h"
 #include "os_detection.h"
 #include "timer.h"
+#include "usb_util.h"
 
 #define AQUA75_RGB_IDLE_TIMEOUT_LONG  300000
 #define AQUA75_RGB_IDLE_TIMEOUT_SHORT 20000
@@ -19,6 +20,16 @@
 #define AQUA75_FN_COL 10
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
+#define AQUA75_MANUAL_USB_RESET_DELAY 50
+#define AQUA75_MANUAL_USB_DISCONNECT_MS 200
+
+enum aqua75_via_channel {
+    id_aqua75_channel = 10,
+};
+
+enum aqua75_via_value {
+    id_aqua75_usb_reset = 1,
+};
 
 static bool     aqua75_capslock_active  = false;
 static bool     aqua75_capslock_visible = false;
@@ -28,15 +39,22 @@ static bool     aqua75_is_suspended     = false;
 static bool     aqua75_rgb_idle_off     = false;
 static bool     aqua75_rgb_was_enabled  = false;
 static bool     aqua75_ignore_fn_activity = false;
+static bool     aqua75_manual_usb_reset_pending = false;
 static uint32_t aqua75_capslock_timer   = 0;
 static uint32_t aqua75_fn_indicator_timer = 0;
 static uint32_t aqua75_fn_tap_timer     = 0;
 static uint32_t aqua75_last_input_time  = 0;
+static uint32_t aqua75_manual_usb_reset_timer = 0;
 static uint32_t aqua75_rgb_idle_timeout = AQUA75_RGB_IDLE_TIMEOUT_SHORT;
 static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
 static uint8_t  aqua75_fn_indicator_led = AQUA75_NO_LED;
 
 static void aqua75_update_fn_indicator(bool enabled);
+
+static void aqua75_schedule_manual_usb_reset(void) {
+    aqua75_manual_usb_reset_pending = true;
+    aqua75_manual_usb_reset_timer   = timer_read32();
+}
 
 static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
     switch (detected_os) {
@@ -184,6 +202,14 @@ void housekeeping_task_kb(void) {
     uint32_t current_input_time = last_input_activity_time();
     bool     fn_held            = matrix_is_on(AQUA75_FN_ROW, AQUA75_FN_COL);
 
+    if (aqua75_manual_usb_reset_pending && timer_elapsed32(aqua75_manual_usb_reset_timer) >= AQUA75_MANUAL_USB_RESET_DELAY) {
+        aqua75_manual_usb_reset_pending = false;
+        usb_disconnect();
+        wait_ms(AQUA75_MANUAL_USB_DISCONNECT_MS);
+        soft_reset_keyboard();
+        return;
+    }
+
     if (current_input_time != aqua75_last_input_time) {
         aqua75_last_input_time = current_input_time;
 
@@ -238,6 +264,39 @@ void housekeeping_task_kb(void) {
     }
 
     housekeeping_task_user();
+}
+
+void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
+    uint8_t *command_id        = &(data[0]);
+    uint8_t *channel_id        = &(data[1]);
+    uint8_t *value_id_and_data = &(data[2]);
+
+    if (*channel_id != id_aqua75_channel) {
+        *command_id = id_unhandled;
+        return;
+    }
+
+    switch (*command_id) {
+        case id_custom_set_value:
+            if (value_id_and_data[0] == id_aqua75_usb_reset && value_id_and_data[1] == 1) {
+                aqua75_schedule_manual_usb_reset();
+            }
+            break;
+        case id_custom_get_value:
+            if (value_id_and_data[0] == id_aqua75_usb_reset) {
+                value_id_and_data[1] = 0;
+            } else {
+                *command_id = id_unhandled;
+            }
+            break;
+        case id_custom_save:
+            break;
+        default:
+            *command_id = id_unhandled;
+            break;
+    }
+
+    (void)length;
 }
 
 void suspend_power_down_kb(void) {
