@@ -36,6 +36,8 @@ static uint32_t aqua75_rgb_idle_timeout = AQUA75_RGB_IDLE_TIMEOUT_SHORT;
 static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
 static uint8_t  aqua75_fn_indicator_led = AQUA75_NO_LED;
 
+static void aqua75_update_fn_indicator(bool enabled);
+
 static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
     switch (detected_os) {
         case OS_WINDOWS:
