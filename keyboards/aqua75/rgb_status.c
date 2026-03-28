@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "quantum.h"
+#include "led_map.h"
 #include "os_detection.h"
 #include "timer.h"
 
@@ -16,9 +17,6 @@
 #define AQUA75_CAPS_LED_INDEX 47
 #define AQUA75_FN_ROW 5
 #define AQUA75_FN_COL 10
-#define AQUA75_MACRO_TOP_LED_INDEX 14
-#define AQUA75_MACRO_SECOND_FROM_BOTTOM_LED_INDEX 61
-#define AQUA75_MACRO_BOTTOM_LED_INDEX 76
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 
 static bool     aqua75_capslock_active  = false;
@@ -33,7 +31,7 @@ static uint32_t aqua75_fn_indicator_timer = 0;
 static uint32_t aqua75_last_input_time  = 0;
 static uint32_t aqua75_rgb_idle_timeout = AQUA75_RGB_IDLE_TIMEOUT_SHORT;
 static uint8_t  aqua75_capslock_hue     = AQUA75_HUE_GREEN;
-static uint8_t  aqua75_fn_indicator_led = AQUA75_MACRO_TOP_LED_INDEX;
+static uint8_t  aqua75_fn_indicator_led = AQUA75_NO_LED;
 
 static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
     switch (detected_os) {
@@ -93,14 +91,14 @@ static void aqua75_restore_led_color(uint8_t led_index) {
 static uint8_t aqua75_fn_indicator_led_index(void) {
     switch (detected_host_os()) {
         case OS_WINDOWS:
-            return AQUA75_MACRO_BOTTOM_LED_INDEX;
+            return aqua75_matrix_to_led(5, 0);
         case OS_MACOS:
-            return AQUA75_MACRO_SECOND_FROM_BOTTOM_LED_INDEX;
+            return aqua75_matrix_to_led(4, 0);
         case OS_UNSURE:
         case OS_LINUX:
         case OS_IOS:
         default:
-            return AQUA75_MACRO_TOP_LED_INDEX;
+            return aqua75_matrix_to_led(1, 0);
     }
 }
 
@@ -116,6 +114,10 @@ static void aqua75_update_fn_indicator(bool enabled) {
     if (aqua75_fn_indicator_led != led_index) {
         aqua75_restore_led_color(aqua75_fn_indicator_led);
         aqua75_fn_indicator_led = led_index;
+    }
+
+    if (led_index == AQUA75_NO_LED) {
+        return;
     }
 
     if (enabled) {
