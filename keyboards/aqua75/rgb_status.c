@@ -68,6 +68,8 @@ static void aqua75_kvm_input(uint16_t keycode) {
     tap_code(KC_RCTL);
     wait_ms(150);
     tap_code16(keycode);
+    wait_ms(300);
+    aqua75_schedule_manual_reset();
 }
 
 static uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
