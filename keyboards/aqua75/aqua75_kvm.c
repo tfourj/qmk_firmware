@@ -10,12 +10,6 @@ static void aqua75_schedule_manual_reset(void) {
     aqua75_state.manual_reset_timer   = timer_read32();
 }
 
-static void aqua75_schedule_kvm_reset(void) {
-    aqua75_state.kvm_reset_pending = true;
-    aqua75_state.kvm_reset_armed   = false;
-    aqua75_state.kvm_reset_timer   = timer_read32();
-}
-
 static void aqua75_kvm_tap(uint16_t keycode, uint16_t hold_delay, uint16_t release_delay) {
     register_code16(keycode);
     wait_ms(hold_delay);
@@ -30,7 +24,7 @@ static void aqua75_kvm_input(uint16_t keycode) {
     aqua75_kvm_tap(KC_RCTL, AQUA75_KVM_TAP_HOLD_DELAY, AQUA75_KVM_SELECT_DELAY);
     aqua75_kvm_tap(keycode, AQUA75_KVM_TAP_HOLD_DELAY, AQUA75_KVM_SEQUENCE_SETTLE_DELAY);
     clear_keyboard();
-    aqua75_schedule_kvm_reset();
+    aqua75_schedule_manual_reset();
 }
 
 bool aqua75_process_record_kvm(uint16_t keycode, keyrecord_t *record) {
@@ -62,26 +56,7 @@ bool aqua75_kvm_housekeeping(void) {
         return false;
     }
 
-    if (aqua75_state.kvm_reset_pending) {
-        uint32_t elapsed = timer_elapsed32(aqua75_state.kvm_reset_timer);
-
-        if (elapsed >= AQUA75_KVM_RESET_TIMEOUT) {
-            aqua75_state.kvm_reset_pending = false;
-            aqua75_state.kvm_reset_armed   = false;
-        } else if (elapsed >= AQUA75_KVM_RESET_ARM_DELAY) {
-            aqua75_state.kvm_reset_armed = true;
-        }
-    }
-
     return true;
-}
-
-void aqua75_kvm_handle_detected_os(os_variant_t detected_os) {
-    if (aqua75_state.kvm_reset_pending && aqua75_state.kvm_reset_armed && detected_os != OS_UNSURE) {
-        aqua75_state.kvm_reset_pending = false;
-        aqua75_state.kvm_reset_armed   = false;
-        aqua75_schedule_manual_reset();
-    }
 }
 
 void aqua75_via_custom_value_command(uint8_t *data, uint8_t length) {

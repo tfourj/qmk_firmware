@@ -25,8 +25,6 @@
 #define AQUA75_KVM_DOUBLE_TAP_DELAY 150
 #define AQUA75_KVM_SELECT_DELAY 185
 #define AQUA75_KVM_SEQUENCE_SETTLE_DELAY 80
-#define AQUA75_KVM_RESET_ARM_DELAY 300
-#define AQUA75_KVM_RESET_TIMEOUT 2000
 
 enum aqua75_via_channel {
     id_aqua75_channel = 10,
@@ -52,14 +50,11 @@ typedef struct {
     bool     rgb_was_enabled;
     bool     ignore_fn_activity;
     bool     manual_reset_pending;
-    bool     kvm_reset_pending;
-    bool     kvm_reset_armed;
     uint32_t capslock_timer;
     uint32_t fn_indicator_timer;
     uint32_t fn_tap_timer;
     uint32_t last_input_time;
     uint32_t manual_reset_timer;
-    uint32_t kvm_reset_timer;
     uint32_t rgb_idle_timeout;
     uint8_t  capslock_hue;
     uint8_t  fn_indicator_led;
