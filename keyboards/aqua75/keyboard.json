@@ -9,7 +9,7 @@
         "pid": "0x0750",
         "device_version": "1.0.0"
     },
-    "development_board": "promicro",
+    "development_board": "promicro_rp2040",
     "build": {
         "lto": true
     },
@@ -39,7 +39,7 @@
         }
     },
     "ws2812": {
-        "pin": "D1"
+        "pin": "GP0"
     },
     "layouts": {
         "LAYOUT": {

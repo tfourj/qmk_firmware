@@ -1,9 +1,9 @@
 CUSTOM_MATRIX = lite
 OS_DETECTION_ENABLE = yes
 NO_USB_STARTUP_CHECK = yes
+I2C_DRIVER_REQUIRED = yes
 
 SRC += matrix.c
-SRC += i2c_override.c
 SRC += aqua75_shared.c
 SRC += aqua75_os.c
 SRC += aqua75_kvm.c
