@@ -9,7 +9,8 @@ aqua75_state_t aqua75_state = {
     .capslock_hue      = AQUA75_HUE_GREEN,
     .fn_mode_indicator_led = AQUA75_NO_LED,
     .fn_os_indicator_led   = AQUA75_NO_LED,
-#if defined(VIA_ENABLE)
-    .via_mode_enabled = true,
-#endif
+};
+
+aqua75_config_t aqua75_config = {
+    .raw = 0,
 };

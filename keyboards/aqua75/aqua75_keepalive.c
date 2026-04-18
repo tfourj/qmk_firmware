@@ -6,10 +6,38 @@
 #include "aqua75_os.h"
 #include "aqua75_rgb.h"
 #include "aqua75_shared.h"
+#include "eeconfig.h"
 #include "raw_hid.h"
 #include "rgblight.h"
 #include "sync_timer.h"
 #include <string.h>
+
+static void aqua75_write_mode_config(bool via_mode_enabled) {
+    if (aqua75_config.magic == AQUA75_EECONFIG_MAGIC && aqua75_config.via_mode_enabled == via_mode_enabled) {
+        return;
+    }
+
+    aqua75_config.raw              = 0;
+    aqua75_config.magic            = AQUA75_EECONFIG_MAGIC;
+    aqua75_config.via_mode_enabled = via_mode_enabled;
+    eeconfig_update_kb(aqua75_config.raw);
+}
+
+void aqua75_eeconfig_init_mode(void) {
+    aqua75_write_mode_config(false);
+    aqua75_state.via_mode_enabled = aqua75_config.via_mode_enabled;
+}
+
+void aqua75_load_mode_config(void) {
+    aqua75_config.raw = eeconfig_read_kb();
+
+    if (aqua75_config.magic != AQUA75_EECONFIG_MAGIC) {
+        aqua75_eeconfig_init_mode();
+        return;
+    }
+
+    aqua75_state.via_mode_enabled = aqua75_config.via_mode_enabled;
+}
 
 bool aqua75_via_mode_enabled(void) {
     return aqua75_state.via_mode_enabled;
@@ -21,6 +49,7 @@ void aqua75_set_via_mode_enabled(bool enabled) {
     }
 
     aqua75_state.via_mode_enabled = enabled;
+    aqua75_write_mode_config(enabled);
     if (enabled) {
         aqua75_state.host_os_hint = OS_UNSURE;
     }

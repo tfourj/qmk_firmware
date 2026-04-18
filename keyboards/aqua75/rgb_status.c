@@ -4,6 +4,7 @@
 #include "aqua75_keepalive.h"
 #include "aqua75_os.h"
 #include "aqua75_rgb.h"
+#include "eeconfig.h"
 
 #if defined(VIA_ENABLE)
 #    include "via.h"
@@ -13,8 +14,14 @@
 #endif
 
 void keyboard_post_init_kb(void) {
+    aqua75_load_mode_config();
     aqua75_rgb_post_init();
     keyboard_post_init_user();
+}
+
+void eeconfig_init_kb(void) {
+    aqua75_eeconfig_init_mode();
+    eeconfig_init_user();
 }
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {

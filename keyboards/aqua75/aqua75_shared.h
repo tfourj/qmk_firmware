@@ -23,6 +23,7 @@
 #define AQUA75_V_COL 5
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
+#define AQUA75_EECONFIG_MAGIC 0x75
 
 enum aqua75_via_channel {
     id_aqua75_channel = 10,
@@ -74,4 +75,15 @@ typedef struct {
     os_variant_t host_os_hint;
 } aqua75_state_t;
 
+typedef union {
+    uint32_t raw;
+    struct {
+        bool    via_mode_enabled : 1;
+        uint8_t reserved         : 7;
+        uint8_t magic;
+        uint16_t unused;
+    };
+} aqua75_config_t;
+
 extern aqua75_state_t aqua75_state;
+extern aqua75_config_t aqua75_config;
