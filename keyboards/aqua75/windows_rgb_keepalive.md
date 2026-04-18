@@ -100,3 +100,5 @@ Notes:
 * On Windows, many HID libraries expose a leading report ID byte. For QMK Raw HID that report ID is usually `0`, so the `32` byte payload starts at index `1` in the app buffer.
 * Send every `10` seconds to stay well under the `30` second timeout.
 * If you want RGB to turn off normally, stop sending pings.
+* If the keyboard is switched to `VIA mode`, custom keepalive packets are rejected on purpose. A host keepalive tool should back off and retry later instead of treating that as a fatal error.
+* If you want to use VIA reliably, switch the keyboard to `VIA mode` first and pause or stop any external keepalive tool.
