@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "aqua75_kvm.h"
+#include "aqua75_keepalive.h"
 #include "aqua75_os.h"
 #include "aqua75_rgb.h"
+#include "raw_hid.h"
 
 void keyboard_post_init_kb(void) {
     aqua75_rgb_post_init();
@@ -50,4 +52,10 @@ void suspend_power_down_kb(void) {
 void suspend_wakeup_init_kb(void) {
     aqua75_rgb_suspend_wakeup_init();
     suspend_wakeup_init_user();
+}
+
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    if (aqua75_raw_hid_receive(data, length)) {
+        return;
+    }
 }

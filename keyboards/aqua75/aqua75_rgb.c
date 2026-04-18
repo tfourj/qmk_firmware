@@ -4,7 +4,19 @@
 #include "aqua75_rgb.h"
 #include "aqua75_os.h"
 #include "led_map.h"
+#include "sync_timer.h"
 #include "timer.h"
+
+static uint32_t aqua75_last_activity_time(void) {
+    uint32_t keyboard_activity_time = last_input_activity_time();
+    uint32_t host_keepalive_time    = aqua75_state.host_keepalive_time;
+
+    if ((int32_t)(host_keepalive_time - keyboard_activity_time) > 0) {
+        return host_keepalive_time;
+    }
+
+    return keyboard_activity_time;
+}
 
 static uint8_t aqua75_hue_distance(uint8_t a, uint8_t b) {
     uint8_t distance = a > b ? a - b : b - a;
@@ -95,7 +107,7 @@ static void aqua75_force_rgb_idle_off(void) {
     aqua75_state.rgb_was_enabled    = true;
     aqua75_state.rgb_idle_off       = true;
     aqua75_state.ignore_fn_activity = true;
-    aqua75_state.last_input_time    = last_input_activity_time();
+    aqua75_state.last_input_time    = aqua75_last_activity_time();
     aqua75_update_capslock_layer(false);
     aqua75_update_fn_indicator(false);
     rgblight_disable_noeeprom();
@@ -104,7 +116,7 @@ static void aqua75_force_rgb_idle_off(void) {
 void aqua75_rgb_post_init(void) {
     aqua75_update_capslock_layer(false);
     aqua75_update_fn_indicator(false);
-    aqua75_state.last_input_time  = last_input_activity_time();
+    aqua75_state.last_input_time  = aqua75_last_activity_time();
     aqua75_state.rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(detected_host_os());
 }
 
@@ -129,7 +141,7 @@ bool aqua75_rgb_led_update(led_t led_state) {
 }
 
 void aqua75_rgb_housekeeping(void) {
-    uint32_t current_input_time = last_input_activity_time();
+    uint32_t current_input_time = aqua75_last_activity_time();
     bool     fn_held            = matrix_is_on(AQUA75_FN_ROW, AQUA75_FN_COL);
 
     if (current_input_time != aqua75_state.last_input_time) {
@@ -145,7 +157,7 @@ void aqua75_rgb_housekeeping(void) {
         }
     }
 
-    if (!aqua75_state.is_suspended && !aqua75_state.rgb_idle_off && rgblight_is_enabled() && last_input_activity_elapsed() >= aqua75_state.rgb_idle_timeout) {
+    if (!aqua75_state.is_suspended && !aqua75_state.rgb_idle_off && rgblight_is_enabled() && sync_timer_elapsed32(current_input_time) >= aqua75_state.rgb_idle_timeout) {
         aqua75_force_rgb_idle_off();
     }
 
@@ -198,7 +210,7 @@ void aqua75_rgb_suspend_wakeup_init(void) {
     aqua75_state.is_suspended       = false;
     aqua75_state.capslock_timer     = timer_read32();
     aqua75_state.fn_indicator_timer = timer_read32();
-    aqua75_state.last_input_time    = last_input_activity_time();
+    aqua75_state.last_input_time    = aqua75_last_activity_time();
 
     if (aqua75_state.capslock_active && !aqua75_state.rgb_idle_off && rgblight_is_enabled()) {
         aqua75_update_capslock_layer(true);

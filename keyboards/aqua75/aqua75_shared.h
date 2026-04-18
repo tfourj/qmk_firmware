@@ -6,8 +6,7 @@
 #include "quantum.h"
 #include "os_detection.h"
 
-#define AQUA75_RGB_IDLE_TIMEOUT_LONG  300000
-#define AQUA75_RGB_IDLE_TIMEOUT_SHORT 20000
+#define AQUA75_RGB_IDLE_TIMEOUT_MS    30000
 #define AQUA75_HUE_GREEN 85
 #define AQUA75_HUE_RED 0
 #define AQUA75_HUE_YELLOW 43
@@ -40,6 +39,14 @@ enum aqua75_custom_keycodes {
     KVM_IN2,
 };
 
+enum aqua75_raw_hid_command {
+    AQUA75_RAW_HID_CMD_KEEPALIVE = 0x01,
+};
+
+enum aqua75_raw_hid_response {
+    AQUA75_RAW_HID_RSP_KEEPALIVE_ACK = 0x81,
+};
+
 typedef struct {
     bool     capslock_active;
     bool     capslock_visible;
@@ -55,6 +62,7 @@ typedef struct {
     uint32_t fn_tap_timer;
     uint32_t last_input_time;
     uint32_t manual_reset_timer;
+    uint32_t host_keepalive_time;
     uint32_t rgb_idle_timeout;
     uint8_t  capslock_hue;
     uint8_t  fn_indicator_led;

@@ -31,6 +31,12 @@ make aqua75:default
 make aqua75:default:flash
 ```
 
+## RGB keepalive
+
+The keyboard turns RGB off after 30 seconds of inactivity. A host app can keep RGB active over Raw HID.
+
+See [windows_rgb_keepalive.md](windows_rgb_keepalive.md) for the packet format and a simple Windows example.
+
 ## Bootloader
 
 Enter the bootloader in one of these ways:

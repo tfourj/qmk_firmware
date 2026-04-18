@@ -5,16 +5,8 @@
 #include "aqua75_rgb.h"
 
 uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
-    switch (detected_os) {
-        case OS_WINDOWS:
-        case OS_MACOS:
-        case OS_LINUX:
-        case OS_IOS:
-            return AQUA75_RGB_IDLE_TIMEOUT_LONG;
-        case OS_UNSURE:
-        default:
-            return AQUA75_RGB_IDLE_TIMEOUT_SHORT;
-    }
+    (void)detected_os;
+    return AQUA75_RGB_IDLE_TIMEOUT_MS;
 }
 
 bool aqua75_process_detected_host_os(os_variant_t detected_os) {
