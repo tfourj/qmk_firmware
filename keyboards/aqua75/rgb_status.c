@@ -41,6 +41,41 @@ void housekeeping_task_kb(void) {
     housekeeping_task_user();
 }
 
+#if defined(VIA_ENABLE)
+void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
+    uint8_t *command_id        = &(data[0]);
+    uint8_t *channel_id        = &(data[1]);
+    uint8_t *value_id_and_data = &(data[2]);
+
+    if (*channel_id != id_aqua75_channel) {
+        *command_id = id_unhandled;
+        return;
+    }
+
+    switch (*command_id) {
+        case id_custom_set_value:
+            if (value_id_and_data[0] != id_aqua75_usb_reset) {
+                *command_id = id_unhandled;
+            }
+            break;
+        case id_custom_get_value:
+            if (value_id_and_data[0] == id_aqua75_usb_reset) {
+                value_id_and_data[1] = 0;
+            } else {
+                *command_id = id_unhandled;
+            }
+            break;
+        case id_custom_save:
+            break;
+        default:
+            *command_id = id_unhandled;
+            break;
+    }
+
+    (void)length;
+}
+#endif
+
 void suspend_power_down_kb(void) {
     aqua75_rgb_suspend_power_down();
     suspend_power_down_user();

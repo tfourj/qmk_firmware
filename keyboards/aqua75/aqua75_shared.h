@@ -19,6 +19,14 @@
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
 
+enum aqua75_via_channel {
+    id_aqua75_channel = 10,
+};
+
+enum aqua75_via_value {
+    id_aqua75_usb_reset = 1,
+};
+
 enum aqua75_raw_hid_command {
     AQUA75_RAW_HID_CMD_KEEPALIVE = 0x7F,
 };
