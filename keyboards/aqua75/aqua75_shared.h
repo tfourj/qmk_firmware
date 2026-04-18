@@ -46,8 +46,8 @@ enum aqua75_raw_hid_response {
     AQUA75_RAW_HID_RSP_KEEPALIVE_ACK = 0x81,
 };
 
-enum aqua75_custom_keycodes {
-    RGB_MD = QK_USER_0,
+enum keyboard_keycodes {
+    RGB_MD = QK_KB_0,
     VIA_MD,
 };
 

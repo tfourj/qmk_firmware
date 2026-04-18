@@ -6,7 +6,19 @@
         "rows": 6,
         "cols": 16
     },
-    "keycodes": ["qmk_lighting"],
+    "keycodes": [
+        "qmk_lighting",
+        {
+            "key": "QK_KB_0",
+            "label": "RGB Mode",
+            "aliases": ["RGB_MD"]
+        },
+        {
+            "key": "QK_KB_1",
+            "label": "VIA Mode",
+            "aliases": ["VIA_MD"]
+        }
+    ],
     "menus": [
         "qmk_rgblight",
         {
