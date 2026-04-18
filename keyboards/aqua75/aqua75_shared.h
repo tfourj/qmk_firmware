@@ -31,6 +31,13 @@ enum aqua75_raw_hid_command {
     AQUA75_RAW_HID_CMD_KEEPALIVE = 0x7F,
 };
 
+enum aqua75_keepalive_host_os {
+    AQUA75_KEEPALIVE_OS_UNSURE  = 0,
+    AQUA75_KEEPALIVE_OS_LINUX   = 1,
+    AQUA75_KEEPALIVE_OS_WINDOWS = 2,
+    AQUA75_KEEPALIVE_OS_MACOS   = 3,
+};
+
 enum aqua75_raw_hid_response {
     AQUA75_RAW_HID_RSP_KEEPALIVE_ACK = 0x81,
 };
@@ -52,6 +59,7 @@ typedef struct {
     uint32_t rgb_idle_timeout;
     uint8_t  capslock_hue;
     uint8_t  fn_indicator_led;
+    os_variant_t host_os_hint;
 } aqua75_state_t;
 
 extern aqua75_state_t aqua75_state;

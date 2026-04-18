@@ -61,7 +61,7 @@ static void aqua75_restore_led_color(uint8_t led_index) {
 }
 
 static uint8_t aqua75_fn_indicator_led_index(void) {
-    switch (detected_host_os()) {
+    switch (aqua75_current_host_os()) {
         case OS_WINDOWS:
             return aqua75_matrix_to_led(5, 0);
         case OS_MACOS:
@@ -117,7 +117,7 @@ void aqua75_rgb_post_init(void) {
     aqua75_update_capslock_layer(false);
     aqua75_update_fn_indicator(false);
     aqua75_state.last_input_time  = aqua75_last_activity_time();
-    aqua75_state.rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(detected_host_os());
+    aqua75_state.rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(aqua75_current_host_os());
 }
 
 void aqua75_rgb_handle_detected_os(void) {

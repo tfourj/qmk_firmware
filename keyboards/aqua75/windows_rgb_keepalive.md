@@ -18,18 +18,27 @@ Packet format from the PC to the keyboard:
 
 * Byte `0`: command
 * Byte `1`: sequence number
-* Bytes `2..31`: set to `0`
+* Byte `2`: host OS hint
+* Bytes `3..31`: set to `0`
 
 Commands:
 
 * `0x7F`: keepalive ping
+
+Host OS hint values:
+
+* `0x00`: unknown / no override
+* `0x01`: Linux
+* `0x02`: Windows
+* `0x03`: macOS
 
 Response from the keyboard:
 
 * Byte `0`: `0x81` keepalive ack
 * Byte `1`: echoed sequence number
 * Byte `2`: `1` if RGB is currently enabled, `0` if not
-* Bytes `3..31`: `0`
+* Byte `3`: keyboard effective host OS (`0` unsure, `1` Linux, `2` Windows, `3` macOS)
+* Bytes `4..31`: `0`
 
 ## Windows app outline
 
@@ -71,6 +80,7 @@ while (true)
     var report = new byte[ReportLength + 1];
     report[1] = 0x7F;
     report[2] = sequence++;
+    report[3] = 0x02; // Windows
     stream.Write(report);
 
     var response = new byte[ReportLength + 1];
@@ -78,7 +88,7 @@ while (true)
 
     if (read > 2 && response[1] == 0x81)
     {
-        Console.WriteLine($"RGB enabled: {response[3] == 1}");
+        Console.WriteLine($"RGB enabled: {response[3] == 1}, effective OS: {response[4]}");
     }
 
     await Task.Delay(TimeSpan.FromSeconds(10));
