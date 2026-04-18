@@ -7,7 +7,6 @@ RAW_ENABLE = yes
 SRC += matrix.c
 SRC += aqua75_shared.c
 SRC += aqua75_os.c
-SRC += aqua75_kvm.c
 SRC += aqua75_keepalive.c
 SRC += aqua75_rgb.c
 SRC += led_map.c

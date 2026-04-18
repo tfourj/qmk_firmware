@@ -18,26 +18,6 @@
 #define AQUA75_FN_COL 10
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
-#define AQUA75_MANUAL_RESET_DELAY 300
-#define AQUA75_MANUAL_USB_DISCONNECT_MS 250
-#define AQUA75_KVM_TAP_HOLD_DELAY 80
-#define AQUA75_KVM_DOUBLE_TAP_DELAY 150
-#define AQUA75_KVM_SELECT_DELAY 250
-#define AQUA75_KVM_SEQUENCE_SETTLE_DELAY 120
-
-enum aqua75_via_channel {
-    id_aqua75_channel = 10,
-};
-
-enum aqua75_via_value {
-    id_aqua75_usb_reset = 1,
-};
-
-enum aqua75_custom_keycodes {
-    USB_RST = QK_USER_0,
-    KVM_IN1,
-    KVM_IN2,
-};
 
 enum aqua75_raw_hid_command {
     AQUA75_RAW_HID_CMD_KEEPALIVE = 0x01,
@@ -56,12 +36,10 @@ typedef struct {
     bool     rgb_idle_off;
     bool     rgb_was_enabled;
     bool     ignore_fn_activity;
-    bool     manual_reset_pending;
     uint32_t capslock_timer;
     uint32_t fn_indicator_timer;
     uint32_t fn_tap_timer;
     uint32_t last_input_time;
-    uint32_t manual_reset_timer;
     uint32_t host_keepalive_time;
     uint32_t rgb_idle_timeout;
     uint8_t  capslock_hue;
