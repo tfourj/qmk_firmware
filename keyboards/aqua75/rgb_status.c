@@ -7,6 +7,7 @@
 
 #if defined(VIA_ENABLE)
 #    include "via.h"
+#    include "raw_hid.h"
 #else
 #    include "raw_hid.h"
 #endif
@@ -88,7 +89,17 @@ void suspend_wakeup_init_kb(void) {
 
 #if defined(VIA_ENABLE)
 bool via_command_kb(uint8_t *data, uint8_t length) {
-    return aqua75_raw_hid_receive(data, length);
+    if (!aqua75_via_mode_enabled()) {
+        if (aqua75_raw_hid_receive(data, length)) {
+            return true;
+        }
+
+        data[0] = id_unhandled;
+        raw_hid_send(data, length);
+        return true;
+    }
+
+    return false;
 }
 #else
 void raw_hid_receive(uint8_t *data, uint8_t length) {
