@@ -1,6 +1,7 @@
 // Copyright 2026 TfourJ
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "aqua75_keepalive.h"
 #include "aqua75_rgb.h"
 #include "aqua75_os.h"
 #include "led_map.h"
@@ -61,17 +62,11 @@ static void aqua75_restore_led_color(uint8_t led_index) {
 }
 
 static uint8_t aqua75_fn_indicator_led_index(void) {
-    switch (aqua75_current_host_os()) {
-        case OS_WINDOWS:
-            return aqua75_matrix_to_led(5, 0);
-        case OS_MACOS:
-            return aqua75_matrix_to_led(4, 0);
-        case OS_UNSURE:
-        case OS_LINUX:
-        case OS_IOS:
-        default:
-            return aqua75_matrix_to_led(1, 0);
+    if (aqua75_via_mode_enabled()) {
+        return aqua75_matrix_to_led(AQUA75_V_ROW, AQUA75_V_COL);
     }
+
+    return aqua75_matrix_to_led(AQUA75_C_ROW, AQUA75_C_COL);
 }
 
 static void aqua75_update_fn_indicator(bool enabled) {
@@ -121,8 +116,10 @@ void aqua75_rgb_post_init(void) {
 }
 
 void aqua75_rgb_handle_detected_os(void) {
-    if (rgblight_is_enabled()) {
-        aqua75_update_fn_indicator(false);
+    if (aqua75_state.fn_indicator_visible) {
+        aqua75_update_fn_indicator(true);
+    } else {
+        aqua75_state.fn_indicator_led = aqua75_fn_indicator_led_index();
     }
 }
 

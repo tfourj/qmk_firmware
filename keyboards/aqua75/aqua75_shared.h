@@ -16,6 +16,10 @@
 #define AQUA75_CAPS_LED_INDEX 47
 #define AQUA75_FN_ROW 5
 #define AQUA75_FN_COL 10
+#define AQUA75_C_ROW 4
+#define AQUA75_C_COL 4
+#define AQUA75_V_ROW 4
+#define AQUA75_V_COL 5
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
 
@@ -42,6 +46,11 @@ enum aqua75_raw_hid_response {
     AQUA75_RAW_HID_RSP_KEEPALIVE_ACK = 0x81,
 };
 
+enum aqua75_custom_keycodes {
+    RGB_MD = QK_USER_0,
+    VIA_MD,
+};
+
 typedef struct {
     bool     capslock_active;
     bool     capslock_visible;
@@ -51,6 +60,7 @@ typedef struct {
     bool     rgb_idle_off;
     bool     rgb_was_enabled;
     bool     ignore_fn_activity;
+    bool     via_mode_enabled;
     uint32_t capslock_timer;
     uint32_t fn_indicator_timer;
     uint32_t fn_tap_timer;

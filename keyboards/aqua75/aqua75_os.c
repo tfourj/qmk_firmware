@@ -32,7 +32,13 @@ uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
 }
 
 void aqua75_set_keepalive_host_os(uint8_t host_os_hint) {
-    aqua75_state.host_os_hint     = aqua75_keepalive_host_os_to_variant(host_os_hint);
+    os_variant_t host_os = aqua75_keepalive_host_os_to_variant(host_os_hint);
+
+    if (aqua75_state.host_os_hint == host_os) {
+        return;
+    }
+
+    aqua75_state.host_os_hint     = host_os;
     aqua75_state.rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(aqua75_current_host_os());
     aqua75_rgb_handle_detected_os();
 }

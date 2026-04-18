@@ -25,7 +25,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
 
-    return true;
+    return aqua75_process_record_mode(keycode, record);
 }
 
 bool led_update_kb(led_t led_state) {
