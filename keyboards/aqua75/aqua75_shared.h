@@ -20,7 +20,7 @@
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
 
 enum aqua75_raw_hid_command {
-    AQUA75_RAW_HID_CMD_KEEPALIVE = 0x01,
+    AQUA75_RAW_HID_CMD_KEEPALIVE = 0x7F,
 };
 
 enum aqua75_raw_hid_response {

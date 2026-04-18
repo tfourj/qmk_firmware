@@ -22,7 +22,7 @@ Packet format from the PC to the keyboard:
 
 Commands:
 
-* `0x01`: keepalive ping
+* `0x7F`: keepalive ping
 
 Response from the keyboard:
 
@@ -69,7 +69,7 @@ byte sequence = 0;
 while (true)
 {
     var report = new byte[ReportLength + 1];
-    report[1] = 0x01;
+    report[1] = 0x7F;
     report[2] = sequence++;
     stream.Write(report);
 
