@@ -68,7 +68,8 @@ typedef struct {
     uint32_t host_keepalive_time;
     uint32_t rgb_idle_timeout;
     uint8_t  capslock_hue;
-    uint8_t  fn_indicator_led;
+    uint8_t  fn_mode_indicator_led;
+    uint8_t  fn_os_indicator_led;
     os_variant_t host_os_hint;
 } aqua75_state_t;
 
