@@ -169,6 +169,8 @@ void aqua75_rgb_housekeeping(void) {
     uint32_t current_input_time = aqua75_last_activity_time();
     bool     fn_held            = matrix_is_on(AQUA75_FN_ROW, AQUA75_FN_COL);
 
+    aqua75_expire_keepalive_host_os();
+
     if (current_input_time != aqua75_state.last_input_time) {
         aqua75_state.last_input_time = current_input_time;
 

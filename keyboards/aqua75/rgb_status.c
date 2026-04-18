@@ -17,10 +17,6 @@ void keyboard_post_init_kb(void) {
     keyboard_post_init_user();
 }
 
-bool process_detected_host_os_kb(os_variant_t detected_os) {
-    return aqua75_process_detected_host_os(detected_os);
-}
-
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!process_record_user(keycode, record)) {
         return false;

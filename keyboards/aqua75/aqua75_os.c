@@ -3,6 +3,7 @@
 
 #include "aqua75_os.h"
 #include "aqua75_rgb.h"
+#include "sync_timer.h"
 
 static os_variant_t aqua75_keepalive_host_os_to_variant(uint8_t host_os_hint) {
     switch (host_os_hint) {
@@ -19,11 +20,7 @@ static os_variant_t aqua75_keepalive_host_os_to_variant(uint8_t host_os_hint) {
 }
 
 os_variant_t aqua75_current_host_os(void) {
-    if (aqua75_state.host_os_hint != OS_UNSURE) {
-        return aqua75_state.host_os_hint;
-    }
-
-    return detected_host_os();
+    return aqua75_state.host_os_hint;
 }
 
 uint32_t aqua75_rgb_idle_timeout_for_os(os_variant_t detected_os) {
@@ -43,8 +40,16 @@ void aqua75_set_keepalive_host_os(uint8_t host_os_hint) {
     aqua75_rgb_handle_detected_os();
 }
 
-bool aqua75_process_detected_host_os(os_variant_t detected_os) {
+void aqua75_expire_keepalive_host_os(void) {
+    if (aqua75_state.host_os_hint == OS_UNSURE) {
+        return;
+    }
+
+    if (sync_timer_elapsed32(aqua75_state.host_keepalive_time) < AQUA75_HOST_OS_TIMEOUT_MS) {
+        return;
+    }
+
+    aqua75_state.host_os_hint     = OS_UNSURE;
     aqua75_state.rgb_idle_timeout = aqua75_rgb_idle_timeout_for_os(aqua75_current_host_os());
     aqua75_rgb_handle_detected_os();
-    return process_detected_host_os_user(detected_os);
 }
