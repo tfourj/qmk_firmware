@@ -5,7 +5,12 @@
 #include "aqua75_keepalive.h"
 #include "aqua75_os.h"
 #include "aqua75_rgb.h"
-#include "raw_hid.h"
+
+#if defined(VIA_ENABLE)
+#    include "via.h"
+#else
+#    include "raw_hid.h"
+#endif
 
 void keyboard_post_init_kb(void) {
     aqua75_rgb_post_init();
@@ -54,8 +59,14 @@ void suspend_wakeup_init_kb(void) {
     suspend_wakeup_init_user();
 }
 
+#if defined(VIA_ENABLE)
+bool via_command_kb(uint8_t *data, uint8_t length) {
+    return aqua75_raw_hid_receive(data, length);
+}
+#else
 void raw_hid_receive(uint8_t *data, uint8_t length) {
     if (aqua75_raw_hid_receive(data, length)) {
         return;
     }
 }
+#endif
