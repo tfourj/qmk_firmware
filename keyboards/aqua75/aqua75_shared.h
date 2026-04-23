@@ -6,7 +6,7 @@
 #include "quantum.h"
 #include "os_detection.h"
 
-#define AQUA75_RGB_IDLE_TIMEOUT_MS    30000
+#define AQUA75_RGB_IDLE_TIMEOUT_MS    12000
 #define AQUA75_HOST_OS_TIMEOUT_MS     30000
 #define AQUA75_HUE_RED 0
 #define AQUA75_CAPS_LED_INDEX 47
