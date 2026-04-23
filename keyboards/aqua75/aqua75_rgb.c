@@ -19,29 +19,20 @@ static uint32_t aqua75_last_activity_time(void) {
     return keyboard_activity_time;
 }
 
-static uint8_t aqua75_hue_distance(uint8_t a, uint8_t b) {
-    uint8_t distance = a > b ? a - b : b - a;
-    return distance < (uint8_t)(256 - distance) ? distance : (uint8_t)(256 - distance);
+static bool aqua75_underglow_is_white(void) {
+    return rgblight_get_sat() == 0 && rgblight_get_val() > 0;
 }
 
-static void aqua75_refresh_capslock_color(void) {
-    static const uint8_t palette[] = {AQUA75_HUE_GREEN, AQUA75_HUE_CYAN, AQUA75_HUE_MAGENTA, AQUA75_HUE_YELLOW, AQUA75_HUE_RED};
-    uint8_t              current_hue = rgblight_get_hue();
-    uint8_t              flash_hue   = AQUA75_HUE_GREEN;
-
-    if (aqua75_hue_distance(current_hue, flash_hue) < AQUA75_HUE_THRESHOLD) {
-        uint8_t start = (uint8_t)(timer_read32() % ARRAY_SIZE(palette));
-
-        for (uint8_t i = 0; i < ARRAY_SIZE(palette); i++) {
-            uint8_t candidate = palette[(start + i) % ARRAY_SIZE(palette)];
-            if (aqua75_hue_distance(current_hue, candidate) >= AQUA75_HUE_THRESHOLD) {
-                flash_hue = candidate;
-                break;
-            }
-        }
+static void aqua75_set_status_blink_at(uint8_t led_index) {
+    if (led_index == AQUA75_NO_LED) {
+        return;
     }
 
-    aqua75_state.capslock_hue = flash_hue;
+    if (aqua75_underglow_is_white()) {
+        rgblight_sethsv_at(AQUA75_HUE_RED, 255, rgblight_get_val(), led_index);
+    } else {
+        rgblight_sethsv_at(0, 0, rgblight_get_val(), led_index);
+    }
 }
 
 static void aqua75_update_capslock_layer(bool enabled) {
@@ -51,13 +42,17 @@ static void aqua75_update_capslock_layer(bool enabled) {
     }
 
     if (aqua75_state.capslock_active && enabled) {
-        rgblight_sethsv_at(aqua75_state.capslock_hue, rgblight_get_sat(), rgblight_get_val(), AQUA75_CAPS_LED_INDEX);
+        aqua75_set_status_blink_at(AQUA75_CAPS_LED_INDEX);
     } else {
         rgblight_sethsv_at(rgblight_get_hue(), rgblight_get_sat(), rgblight_get_val(), AQUA75_CAPS_LED_INDEX);
     }
 }
 
 static void aqua75_restore_led_color(uint8_t led_index) {
+    if (led_index == AQUA75_NO_LED) {
+        return;
+    }
+
     rgblight_sethsv_at(rgblight_get_hue(), rgblight_get_sat(), rgblight_get_val(), led_index);
 }
 
@@ -106,10 +101,10 @@ static void aqua75_update_fn_indicator(bool enabled) {
 
     if (enabled) {
         if (mode_led_index != AQUA75_NO_LED) {
-            rgblight_sethsv_at(0, 0, rgblight_get_val(), mode_led_index);
+            aqua75_set_status_blink_at(mode_led_index);
         }
         if (os_led_index != AQUA75_NO_LED && os_led_index != mode_led_index) {
-            rgblight_sethsv_at(0, 0, rgblight_get_val(), os_led_index);
+            aqua75_set_status_blink_at(os_led_index);
         }
     } else {
         if (mode_led_index != AQUA75_NO_LED) {
@@ -156,7 +151,6 @@ bool aqua75_rgb_led_update(led_t led_state) {
     aqua75_state.capslock_timer  = timer_read32();
 
     if (aqua75_state.capslock_active && !aqua75_state.is_suspended && rgblight_is_enabled()) {
-        aqua75_refresh_capslock_color();
         aqua75_update_capslock_layer(true);
     } else {
         aqua75_update_capslock_layer(false);

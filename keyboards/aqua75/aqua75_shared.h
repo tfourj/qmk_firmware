@@ -8,12 +8,7 @@
 
 #define AQUA75_RGB_IDLE_TIMEOUT_MS    30000
 #define AQUA75_HOST_OS_TIMEOUT_MS     30000
-#define AQUA75_HUE_GREEN 85
 #define AQUA75_HUE_RED 0
-#define AQUA75_HUE_YELLOW 43
-#define AQUA75_HUE_CYAN 128
-#define AQUA75_HUE_MAGENTA 191
-#define AQUA75_HUE_THRESHOLD 24
 #define AQUA75_CAPS_LED_INDEX 47
 #define AQUA75_FN_ROW 5
 #define AQUA75_FN_COL 10
@@ -69,7 +64,6 @@ typedef struct {
     uint32_t last_input_time;
     uint32_t host_keepalive_time;
     uint32_t rgb_idle_timeout;
-    uint8_t  capslock_hue;
     uint8_t  fn_mode_indicator_led;
     uint8_t  fn_os_indicator_led;
     os_variant_t host_os_hint;
