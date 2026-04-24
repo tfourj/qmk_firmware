@@ -3,9 +3,13 @@
 
 #include "quantum.h"
 #include "drivers/gpio/mcp23018.h"
+#include "sync_timer.h"
 #include "wait.h"
 
-static bool mcp_ready = false;
+static bool     mcp_ready           = false;
+static uint32_t mcp_last_retry_time = 0;
+
+#define AQUA75_MCP_RETRY_INTERVAL_MS 250
 
 static void unselect_rows(void) {
     const pin_t row_pins[MATRIX_ROWS] = MATRIX_ROW_PINS;
@@ -30,6 +34,20 @@ static bool aqua75_init_mcp23018(void) {
            mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT);
 }
 
+static bool aqua75_try_recover_mcp23018(void) {
+    if (mcp_ready) {
+        return true;
+    }
+
+    if (mcp_last_retry_time != 0 && sync_timer_elapsed32(mcp_last_retry_time) < AQUA75_MCP_RETRY_INTERVAL_MS) {
+        return false;
+    }
+
+    mcp_last_retry_time = sync_timer_read32();
+    mcp_ready           = aqua75_init_mcp23018();
+    return mcp_ready;
+}
+
 static matrix_row_t read_cols(void) {
     const uint8_t col_order[MATRIX_COLS] = AQUA75_MCP23018_COL_ORDER;
     uint16_t      raw_state              = 0xFFFF;
@@ -52,16 +70,19 @@ static matrix_row_t read_cols(void) {
 void matrix_init_custom(void) {
     unselect_rows();
     mcp_ready = aqua75_init_mcp23018();
+    if (mcp_ready) {
+        mcp_last_retry_time = 0;
+    } else {
+        mcp_last_retry_time = sync_timer_read32();
+    }
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     bool changed = false;
 
-    if (!mcp_ready) {
-        mcp_ready = aqua75_init_mcp23018();
-        if (!mcp_ready) {
-            return false;
-        }
+    if (!aqua75_try_recover_mcp23018()) {
+        unselect_rows();
+        return false;
     }
 
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
@@ -69,12 +90,16 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
         wait_us(30);
 
         matrix_row_t row_state = read_cols();
+        unselect_rows();
+
+        if (!mcp_ready) {
+            return false;
+        }
+
         if (current_matrix[row] != row_state) {
             current_matrix[row] = row_state;
             changed             = true;
         }
-
-        unselect_rows();
     }
 
     return changed;
