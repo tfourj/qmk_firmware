@@ -7,15 +7,15 @@
 #include "i2c_master.h"
 #include "wait.h"
 
-static bool     mcp_ready = false;
-static uint32_t mcp_fail_count = 0;
+static bool    mcp_ready        = false;
+static uint8_t mcp_fail_count   = 0;
+static uint8_t mcp_retry_period = 0;
 
 static void unselect_rows(void) {
     const pin_t row_pins[MATRIX_ROWS] = MATRIX_ROW_PINS;
 
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
-        gpio_set_pin_input(row_pins[row]);
-        gpio_write_pin_low(row_pins[row]);
+        gpio_set_pin_input_high(row_pins[row]);
     }
 }
 
@@ -51,8 +51,13 @@ static void i2c_recover_bus(void) {
 static bool aqua75_init_mcp23018(void) {
     mcp23018_init(AQUA75_MCP23018_ADDRESS);
 
-    return mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
-           mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT);
+    if (mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
+        mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT)) {
+        mcp_fail_count = 0;
+        return true;
+    }
+
+    return false;
 }
 
 static bool aqua75_recover_mcp23018(void) {
@@ -62,11 +67,13 @@ static bool aqua75_recover_mcp23018(void) {
 
     if (mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
         mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT)) {
-        mcp_fail_count = 0;
+        mcp_fail_count   = 0;
+        mcp_retry_period = 0;
         aqua75_state.i2c_recovery_flash = 50;
         return true;
     }
 
+    mcp_fail_count++;
     return false;
 }
 
@@ -79,16 +86,18 @@ static matrix_row_t read_cols(void) {
         return 0;
     }
 
-    if (mcp23018_read_pins_all(AQUA75_MCP23018_ADDRESS, &raw_state)) {
-        mcp_fail_count = 0;
+    for (uint8_t attempt = 0; attempt < 2; attempt++) {
+        if (mcp23018_read_pins_all(AQUA75_MCP23018_ADDRESS, &raw_state)) {
+            mcp_fail_count = 0;
 
-        for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-            if (!(raw_state & (1U << col_order[col]))) {
-                row_state |= ((matrix_row_t)1 << col);
+            for (uint8_t col = 0; col < MATRIX_COLS; col++) {
+                if (!(raw_state & (1U << col_order[col]))) {
+                    row_state |= ((matrix_row_t)1 << col);
+                }
             }
-        }
 
-        return row_state;
+            return row_state;
+        }
     }
 
     mcp_ready = false;
@@ -102,13 +111,13 @@ void matrix_init_custom(void) {
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
-    bool changed = false;
-
     if (!mcp_ready) {
-        if (mcp_fail_count < 3) {
-            mcp_ready = aqua75_init_mcp23018();
-        } else {
+        mcp_retry_period++;
+
+        if (mcp_fail_count >= 3 || mcp_retry_period == 0) {
             mcp_ready = aqua75_recover_mcp23018();
+        } else {
+            mcp_ready = aqua75_init_mcp23018();
         }
 
         if (!mcp_ready) {
@@ -116,16 +125,13 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
         }
     }
 
+    bool changed = false;
+
     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
         select_row(row);
         wait_us(30);
 
         matrix_row_t row_state = read_cols();
-        if (!mcp_ready) {
-            unselect_rows();
-            return changed;
-        }
-
         if (current_matrix[row] != row_state) {
             current_matrix[row] = row_state;
             changed             = true;
