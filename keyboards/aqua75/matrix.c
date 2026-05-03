@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "quantum.h"
+#include "aqua75_shared.h"
 #include "drivers/gpio/mcp23018.h"
 #include "i2c_master.h"
 #include "wait.h"
@@ -62,6 +63,7 @@ static bool aqua75_recover_mcp23018(void) {
     if (mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
         mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT)) {
         mcp_fail_count = 0;
+        aqua75_state.i2c_recovery_flash = 50;
         return true;
     }
 

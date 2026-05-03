@@ -218,6 +218,14 @@ void aqua75_rgb_housekeeping(void) {
             aqua75_update_fn_indicator(false);
         }
     }
+
+    if (aqua75_state.i2c_recovery_flash > 0) {
+        if (!rgblight_is_enabled()) {
+            rgblight_enable_noeeprom();
+        }
+        rgblight_setrgb(0, 255, 0);
+        aqua75_state.i2c_recovery_flash--;
+    }
 }
 
 void aqua75_rgb_suspend_power_down(void) {
