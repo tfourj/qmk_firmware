@@ -1,6 +1,7 @@
 CUSTOM_MATRIX = lite
 I2C_DRIVER_REQUIRED = yes
 RAW_ENABLE = yes
+CONSOLE_ENABLE = yes
 
 SRC += matrix.c
 SRC += aqua75_shared.c

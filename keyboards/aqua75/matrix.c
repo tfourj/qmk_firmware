@@ -5,11 +5,35 @@
 #include "aqua75_shared.h"
 #include "drivers/gpio/mcp23018.h"
 #include "i2c_master.h"
+#include "print.h"
 #include "wait.h"
 
 static bool    mcp_ready        = false;
 static uint8_t mcp_fail_count   = 0;
 static uint8_t mcp_retry_period = 0;
+
+#ifdef CONSOLE_ENABLE
+static uint32_t mcp_last_debug_log = 0;
+static bool     mcp_debug_log_seen = false;
+
+static void aqua75_debug_mcp_log(const char *message, bool rate_limit) {
+    if (rate_limit && mcp_debug_log_seen && timer_elapsed32(mcp_last_debug_log) < 1000) {
+        return;
+    }
+
+    mcp_debug_log_seen = true;
+    mcp_last_debug_log = timer_read32();
+    dprintf("aqua75: mcp23018 %s, fail_count=%u, retry_period=%u\n", message, mcp_fail_count, mcp_retry_period);
+}
+
+static void aqua75_debug_mcp(const char *message) {
+    aqua75_debug_mcp_log(message, true);
+}
+
+static void aqua75_debug_mcp_force(const char *message) {
+    aqua75_debug_mcp_log(message, false);
+}
+#endif
 
 static void unselect_rows(void) {
     const pin_t row_pins[MATRIX_ROWS] = MATRIX_ROW_PINS;
@@ -53,26 +77,43 @@ static bool aqua75_init_mcp23018(void) {
 
     if (mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
         mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT)) {
+#ifdef CONSOLE_ENABLE
+        if (mcp_fail_count > 0) {
+            aqua75_debug_mcp_force("init recovered");
+        }
+#endif
         mcp_fail_count = 0;
         return true;
     }
 
+#ifdef CONSOLE_ENABLE
+    aqua75_debug_mcp("init failed");
+#endif
     return false;
 }
 
 static bool aqua75_recover_mcp23018(void) {
+#ifdef CONSOLE_ENABLE
+    aqua75_debug_mcp("recovering i2c bus");
+#endif
     i2c_recover_bus();
 
     mcp23018_init(AQUA75_MCP23018_ADDRESS);
 
     if (mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
         mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT)) {
+#ifdef CONSOLE_ENABLE
+        aqua75_debug_mcp_force("recovered");
+#endif
         mcp_fail_count   = 0;
         mcp_retry_period = 0;
         aqua75_state.i2c_recovery_flash = 50;
         return true;
     }
 
+#ifdef CONSOLE_ENABLE
+    aqua75_debug_mcp("recover failed");
+#endif
     mcp_fail_count++;
     return false;
 }
@@ -101,11 +142,19 @@ static matrix_row_t read_cols(void) {
     }
 
     mcp_ready = false;
+#ifdef CONSOLE_ENABLE
+    aqua75_debug_mcp("read failed");
+#endif
     mcp_fail_count++;
     return 0;
 }
 
 void matrix_init_custom(void) {
+#ifdef CONSOLE_ENABLE
+    debug_enable   = true;
+    debug_keyboard = true;
+#endif
+
     unselect_rows();
     mcp_ready = aqua75_init_mcp23018();
 }
