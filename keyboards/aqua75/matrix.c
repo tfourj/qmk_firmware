@@ -130,7 +130,25 @@ static bool aqua75_init_mcp23018(void) {
 #ifdef CONSOLE_ENABLE
     aqua75_debug_mcp("init failed");
 #endif
+    mcp_fail_count++;
     return false;
+}
+
+static bool aqua75_clear_matrix(matrix_row_t current_matrix[]) {
+    bool changed = false;
+
+    for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
+        if (current_matrix[row] != 0) {
+#ifdef CONSOLE_ENABLE
+            mcp_row_change_count++;
+            aqua75_debug_mcp_row_change(row, current_matrix[row], 0);
+#endif
+            current_matrix[row] = 0;
+            changed             = true;
+        }
+    }
+
+    return changed;
 }
 
 static bool aqua75_recover_mcp23018(void) {
@@ -229,10 +247,11 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
         }
 
         if (!mcp_ready) {
+            bool changed = aqua75_clear_matrix(current_matrix);
 #ifdef CONSOLE_ENABLE
             aqua75_debug_mcp_stats(timer_elapsed32(scan_start));
 #endif
-            return false;
+            return changed;
         }
     }
 
