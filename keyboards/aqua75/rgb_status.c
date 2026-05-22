@@ -5,6 +5,7 @@
 #include "aqua75_os.h"
 #include "aqua75_rgb.h"
 #include "eeconfig.h"
+#include "print.h"
 
 #if defined(VIA_ENABLE)
 #    include "via.h"
@@ -28,6 +29,11 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!process_record_user(keycode, record)) {
         return false;
     }
+
+#ifdef CONSOLE_ENABLE
+    uprintf("aqua75: key kc=0x%04X row=%u col=%u pressed=%u time=%u interrupted=%u count=%u\n", keycode, record->event.key.row, record->event.key.col,
+            record->event.pressed, record->event.time, record->tap.interrupted, record->tap.count);
+#endif
 
     return aqua75_process_record_mode(keycode, record);
 }

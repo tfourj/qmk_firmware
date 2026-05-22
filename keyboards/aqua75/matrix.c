@@ -13,8 +13,18 @@ static uint8_t mcp_fail_count   = 0;
 static uint8_t mcp_retry_period = 0;
 
 #ifdef CONSOLE_ENABLE
-static uint32_t mcp_last_debug_log = 0;
-static bool     mcp_debug_log_seen = false;
+static uint32_t mcp_last_debug_log      = 0;
+static bool     mcp_debug_log_seen      = false;
+static uint32_t mcp_stats_timer         = 0;
+static uint32_t mcp_scan_count          = 0;
+static uint32_t mcp_read_count          = 0;
+static uint32_t mcp_read_ok_count       = 0;
+static uint32_t mcp_read_retry_count    = 0;
+static uint32_t mcp_read_fail_count     = 0;
+static uint32_t mcp_recover_count       = 0;
+static uint32_t mcp_recover_ok_count    = 0;
+static uint32_t mcp_row_change_count    = 0;
+static uint16_t mcp_max_scan_elapsed_ms = 0;
 
 static void aqua75_debug_mcp_log(const char *message, bool rate_limit) {
     if (rate_limit && mcp_debug_log_seen && timer_elapsed32(mcp_last_debug_log) < 1000) {
@@ -32,6 +42,37 @@ static void aqua75_debug_mcp(const char *message) {
 
 static void aqua75_debug_mcp_force(const char *message) {
     aqua75_debug_mcp_log(message, false);
+}
+
+static void aqua75_debug_mcp_row_change(uint8_t row, matrix_row_t previous, matrix_row_t current) {
+    uprintf("aqua75: matrix row=%u old=0x%04X new=0x%04X diff=0x%04X\n", row, previous, current, previous ^ current);
+}
+
+static void aqua75_debug_mcp_stats(uint16_t scan_elapsed_ms) {
+    mcp_scan_count++;
+
+    if (scan_elapsed_ms > mcp_max_scan_elapsed_ms) {
+        mcp_max_scan_elapsed_ms = scan_elapsed_ms;
+    }
+
+    if (timer_elapsed32(mcp_stats_timer) < 1000) {
+        return;
+    }
+
+    mcp_stats_timer = timer_read32();
+    uprintf("aqua75: mcp stats scans=%lu reads=%lu ok=%lu retries=%lu read_fail=%lu recover=%lu/%lu row_changes=%lu max_scan_ms=%u ready=%u fail_count=%u retry_period=%u\n",
+            mcp_scan_count, mcp_read_count, mcp_read_ok_count, mcp_read_retry_count, mcp_read_fail_count, mcp_recover_ok_count, mcp_recover_count,
+            mcp_row_change_count, mcp_max_scan_elapsed_ms, mcp_ready, mcp_fail_count, mcp_retry_period);
+
+    mcp_scan_count          = 0;
+    mcp_read_count          = 0;
+    mcp_read_ok_count       = 0;
+    mcp_read_retry_count    = 0;
+    mcp_read_fail_count     = 0;
+    mcp_recover_count       = 0;
+    mcp_recover_ok_count    = 0;
+    mcp_row_change_count    = 0;
+    mcp_max_scan_elapsed_ms = 0;
 }
 #endif
 
@@ -94,6 +135,7 @@ static bool aqua75_init_mcp23018(void) {
 
 static bool aqua75_recover_mcp23018(void) {
 #ifdef CONSOLE_ENABLE
+    mcp_recover_count++;
     aqua75_debug_mcp("recovering i2c bus");
 #endif
     i2c_recover_bus();
@@ -103,6 +145,7 @@ static bool aqua75_recover_mcp23018(void) {
     if (mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTA, ALL_INPUT) &&
         mcp23018_set_config(AQUA75_MCP23018_ADDRESS, mcp23018_PORTB, ALL_INPUT)) {
 #ifdef CONSOLE_ENABLE
+        mcp_recover_ok_count++;
         aqua75_debug_mcp_force("recovered");
 #endif
         mcp_fail_count   = 0;
@@ -128,7 +171,16 @@ static matrix_row_t read_cols(void) {
     }
 
     for (uint8_t attempt = 0; attempt < 2; attempt++) {
+#ifdef CONSOLE_ENABLE
+        mcp_read_count++;
+        if (attempt > 0) {
+            mcp_read_retry_count++;
+        }
+#endif
         if (mcp23018_read_pins_all(AQUA75_MCP23018_ADDRESS, &raw_state)) {
+#ifdef CONSOLE_ENABLE
+            mcp_read_ok_count++;
+#endif
             mcp_fail_count = 0;
 
             for (uint8_t col = 0; col < MATRIX_COLS; col++) {
@@ -143,6 +195,7 @@ static matrix_row_t read_cols(void) {
 
     mcp_ready = false;
 #ifdef CONSOLE_ENABLE
+    mcp_read_fail_count++;
     aqua75_debug_mcp("read failed");
 #endif
     mcp_fail_count++;
@@ -151,8 +204,10 @@ static matrix_row_t read_cols(void) {
 
 void matrix_init_custom(void) {
 #ifdef CONSOLE_ENABLE
-    debug_enable   = true;
-    debug_keyboard = true;
+    debug_enable    = true;
+    debug_matrix    = true;
+    debug_keyboard  = true;
+    mcp_stats_timer = timer_read32();
 #endif
 
     unselect_rows();
@@ -160,6 +215,10 @@ void matrix_init_custom(void) {
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
+#ifdef CONSOLE_ENABLE
+    uint32_t scan_start = timer_read32();
+#endif
+
     if (!mcp_ready) {
         mcp_retry_period++;
 
@@ -170,6 +229,9 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
         }
 
         if (!mcp_ready) {
+#ifdef CONSOLE_ENABLE
+            aqua75_debug_mcp_stats(timer_elapsed32(scan_start));
+#endif
             return false;
         }
     }
@@ -182,12 +244,20 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
 
         matrix_row_t row_state = read_cols();
         if (current_matrix[row] != row_state) {
+#ifdef CONSOLE_ENABLE
+            mcp_row_change_count++;
+            aqua75_debug_mcp_row_change(row, current_matrix[row], row_state);
+#endif
             current_matrix[row] = row_state;
             changed             = true;
         }
 
         unselect_rows();
     }
+
+#ifdef CONSOLE_ENABLE
+    aqua75_debug_mcp_stats(timer_elapsed32(scan_start));
+#endif
 
     return changed;
 }
