@@ -5,6 +5,7 @@
 #include "aqua75_rgb.h"
 #include "aqua75_os.h"
 #include "led_map.h"
+#include "print.h"
 #include "sync_timer.h"
 #include "timer.h"
 
@@ -197,6 +198,9 @@ void aqua75_rgb_housekeeping(void) {
 
             if (timer_elapsed32(aqua75_state.fn_tap_timer) <= AQUA75_FN_DOUBLE_TAP_TERM) {
                 aqua75_state.fn_tap_timer = 0;
+#ifdef CONSOLE_ENABLE
+                uprintf("aqua75: fn double tap detected\n");
+#endif
                 aqua75_force_rgb_idle_off();
                 forced_idle_off = true;
             } else {
