@@ -8,9 +8,18 @@
 #include "print.h"
 #include "wait.h"
 
-static bool    mcp_ready        = false;
-static uint8_t mcp_fail_count   = 0;
-static uint8_t mcp_retry_period = 0;
+#ifdef PROTOCOL_CHIBIOS
+#    include "chibios_config.h"
+#    include <hal.h>
+#endif
+
+#define AQUA75_MCP_RETRY_MIN_MS 25
+#define AQUA75_MCP_RETRY_MAX_MS 1000
+
+static bool     mcp_ready            = false;
+static uint16_t mcp_fail_count       = 0;
+static uint16_t mcp_retry_period     = 0;
+static uint32_t mcp_last_retry_timer = 0;
 
 #ifdef CONSOLE_ENABLE
 static uint32_t mcp_last_debug_log      = 0;
@@ -113,6 +122,33 @@ static void i2c_recover_bus(void) {
     wait_us(10);
 }
 
+static void i2c_restore_bus(void) {
+#if defined(PROTOCOL_CHIBIOS) && defined(USE_GPIOV1)
+    palSetLineMode(I2C1_SCL_PIN, I2C1_SCL_PAL_MODE);
+    palSetLineMode(I2C1_SDA_PIN, I2C1_SDA_PAL_MODE);
+#elif defined(PROTOCOL_CHIBIOS)
+    palSetLineMode(I2C1_SCL_PIN, PAL_MODE_ALTERNATE(I2C1_SCL_PAL_MODE) | PAL_OUTPUT_TYPE_OPENDRAIN);
+    palSetLineMode(I2C1_SDA_PIN, PAL_MODE_ALTERNATE(I2C1_SDA_PAL_MODE) | PAL_OUTPUT_TYPE_OPENDRAIN);
+#else
+    i2c_init();
+#endif
+}
+
+static void aqua75_schedule_mcp_retry(void) {
+    if (mcp_fail_count < UINT16_MAX) {
+        mcp_fail_count++;
+    }
+
+    uint8_t shift = mcp_fail_count > 5 ? 5 : mcp_fail_count;
+    mcp_retry_period = AQUA75_MCP_RETRY_MIN_MS << shift;
+
+    if (mcp_retry_period > AQUA75_MCP_RETRY_MAX_MS) {
+        mcp_retry_period = AQUA75_MCP_RETRY_MAX_MS;
+    }
+
+    mcp_last_retry_timer = timer_read32();
+}
+
 static bool aqua75_init_mcp23018(void) {
     mcp23018_init(AQUA75_MCP23018_ADDRESS);
 
@@ -130,7 +166,7 @@ static bool aqua75_init_mcp23018(void) {
 #ifdef CONSOLE_ENABLE
     aqua75_debug_mcp("init failed");
 #endif
-    mcp_fail_count++;
+    aqua75_schedule_mcp_retry();
     return false;
 }
 
@@ -157,6 +193,7 @@ static bool aqua75_recover_mcp23018(void) {
     aqua75_debug_mcp("recovering i2c bus");
 #endif
     i2c_recover_bus();
+    i2c_restore_bus();
 
     mcp23018_init(AQUA75_MCP23018_ADDRESS);
 
@@ -175,7 +212,7 @@ static bool aqua75_recover_mcp23018(void) {
 #ifdef CONSOLE_ENABLE
     aqua75_debug_mcp("recover failed");
 #endif
-    mcp_fail_count++;
+    aqua75_schedule_mcp_retry();
     return false;
 }
 
@@ -216,7 +253,7 @@ static matrix_row_t read_cols(void) {
     mcp_read_fail_count++;
     aqua75_debug_mcp("read failed");
 #endif
-    mcp_fail_count++;
+    aqua75_schedule_mcp_retry();
     return 0;
 }
 
@@ -238,9 +275,15 @@ bool matrix_scan_custom(matrix_row_t current_matrix[]) {
 #endif
 
     if (!mcp_ready) {
-        mcp_retry_period++;
+        if (mcp_retry_period > 0 && timer_elapsed32(mcp_last_retry_timer) < mcp_retry_period) {
+            bool changed = aqua75_clear_matrix(current_matrix);
+#ifdef CONSOLE_ENABLE
+            aqua75_debug_mcp_stats(timer_elapsed32(scan_start));
+#endif
+            return changed;
+        }
 
-        if (mcp_fail_count >= 3 || mcp_retry_period == 0) {
+        if (mcp_fail_count >= 3) {
             mcp_ready = aqua75_recover_mcp23018();
         } else {
             mcp_ready = aqua75_init_mcp23018();
