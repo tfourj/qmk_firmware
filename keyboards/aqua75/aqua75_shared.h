@@ -19,6 +19,7 @@
 #define AQUA75_STATUS_BLINK_INTERVAL 500
 #define AQUA75_FN_DOUBLE_TAP_TERM 300
 #define AQUA75_EECONFIG_MAGIC 0x75
+#define AQUA75_I2C_RECOVERY_FLASH_MS 15000
 
 enum aqua75_via_channel {
     id_aqua75_channel = 10,
@@ -64,10 +65,18 @@ typedef struct {
     uint32_t last_input_time;
     uint32_t host_keepalive_time;
     uint32_t rgb_idle_timeout;
+    uint32_t i2c_recovery_flash_timer;
     uint8_t  fn_mode_indicator_led;
     uint8_t  fn_os_indicator_led;
+    uint8_t  i2c_recovery_restore_mode;
+    uint8_t  i2c_recovery_restore_hue;
+    uint8_t  i2c_recovery_restore_sat;
+    uint8_t  i2c_recovery_restore_val;
+    uint8_t  i2c_recovery_restore_speed;
     os_variant_t host_os_hint;
-    uint8_t  i2c_recovery_flash;
+    bool     i2c_recovery_flash_requested;
+    bool     i2c_recovery_flash_active;
+    bool     i2c_recovery_restore_enabled;
 } aqua75_state_t;
 
 typedef union {

@@ -205,7 +205,7 @@ static bool aqua75_recover_mcp23018(void) {
 #endif
         mcp_fail_count   = 0;
         mcp_retry_period = 0;
-        aqua75_state.i2c_recovery_flash = 50;
+        aqua75_state.i2c_recovery_flash_requested = true;
         return true;
     }
 

@@ -131,6 +131,69 @@ static void aqua75_force_rgb_idle_off(void) {
     rgblight_disable_noeeprom();
 }
 
+static void aqua75_start_i2c_recovery_flash(void) {
+    aqua75_state.i2c_recovery_flash_requested = false;
+    aqua75_state.i2c_recovery_flash_timer     = timer_read32();
+
+    if (aqua75_state.i2c_recovery_flash_active) {
+        rgblight_setrgb(0, 255, 0);
+        return;
+    }
+
+    aqua75_state.i2c_recovery_flash_active    = true;
+    aqua75_state.i2c_recovery_restore_enabled = rgblight_is_enabled();
+    aqua75_state.i2c_recovery_restore_mode    = rgblight_get_mode();
+    aqua75_state.i2c_recovery_restore_hue     = rgblight_get_hue();
+    aqua75_state.i2c_recovery_restore_sat     = rgblight_get_sat();
+    aqua75_state.i2c_recovery_restore_val     = rgblight_get_val();
+    aqua75_state.i2c_recovery_restore_speed   = rgblight_get_speed();
+
+    if (!rgblight_is_enabled()) {
+        rgblight_enable_noeeprom();
+    }
+
+    rgblight_mode_noeeprom(RGBLIGHT_MODE_STATIC_LIGHT);
+    rgblight_setrgb(0, 255, 0);
+}
+
+static void aqua75_restore_i2c_recovery_flash(void) {
+    aqua75_state.i2c_recovery_flash_active = false;
+
+    if (!aqua75_state.i2c_recovery_restore_enabled) {
+        rgblight_disable_noeeprom();
+        return;
+    }
+
+    if (!rgblight_is_enabled()) {
+        rgblight_enable_noeeprom();
+    }
+
+    rgblight_set_speed_noeeprom(aqua75_state.i2c_recovery_restore_speed);
+    rgblight_sethsv_noeeprom(
+        aqua75_state.i2c_recovery_restore_hue,
+        aqua75_state.i2c_recovery_restore_sat,
+        aqua75_state.i2c_recovery_restore_val
+    );
+    rgblight_mode_noeeprom(aqua75_state.i2c_recovery_restore_mode);
+}
+
+static void aqua75_update_i2c_recovery_flash(void) {
+    if (aqua75_state.i2c_recovery_flash_requested) {
+        aqua75_start_i2c_recovery_flash();
+    }
+
+    if (!aqua75_state.i2c_recovery_flash_active) {
+        return;
+    }
+
+    if (timer_elapsed32(aqua75_state.i2c_recovery_flash_timer) >= AQUA75_I2C_RECOVERY_FLASH_MS) {
+        aqua75_restore_i2c_recovery_flash();
+        return;
+    }
+
+    rgblight_setrgb(0, 255, 0);
+}
+
 void aqua75_rgb_post_init(void) {
     aqua75_update_capslock_layer(false);
     aqua75_update_fn_indicator(false);
@@ -179,7 +242,8 @@ void aqua75_rgb_housekeeping(void) {
         }
     }
 
-    if (!aqua75_state.is_suspended && !aqua75_state.rgb_idle_off && rgblight_is_enabled() && sync_timer_elapsed32(current_input_time) >= aqua75_state.rgb_idle_timeout) {
+    if (!aqua75_state.is_suspended && !aqua75_state.rgb_idle_off && !aqua75_state.i2c_recovery_flash_active && rgblight_is_enabled() &&
+        sync_timer_elapsed32(current_input_time) >= aqua75_state.rgb_idle_timeout) {
         aqua75_force_rgb_idle_off();
     }
 
@@ -223,13 +287,7 @@ void aqua75_rgb_housekeeping(void) {
         }
     }
 
-    if (aqua75_state.i2c_recovery_flash > 0) {
-        if (!rgblight_is_enabled()) {
-            rgblight_enable_noeeprom();
-        }
-        rgblight_setrgb(0, 255, 0);
-        aqua75_state.i2c_recovery_flash--;
-    }
+    aqua75_update_i2c_recovery_flash();
 }
 
 void aqua75_rgb_suspend_power_down(void) {
